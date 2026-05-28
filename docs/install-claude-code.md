@@ -40,7 +40,7 @@ Open `~/.claude/settings.json` and merge these into the `hooks` block:
         "hooks": [
           {
             "type": "command",
-            "command": "python -m asof_core.adapters.claude_code.session_init",
+            "command": "python -m adapters.claude_code.session_init",
             "timeout": 5000
           }
         ]
@@ -51,7 +51,7 @@ Open `~/.claude/settings.json` and merge these into the `hooks` block:
         "hooks": [
           {
             "type": "command",
-            "command": "python -m asof_core.adapters.claude_code.watch",
+            "command": "python -m adapters.claude_code.watch",
             "timeout": 5000
           }
         ]
@@ -62,7 +62,7 @@ Open `~/.claude/settings.json` and merge these into the `hooks` block:
         "hooks": [
           {
             "type": "command",
-            "command": "python -m asof_core.adapters.claude_code.post_tool",
+            "command": "python -m adapters.claude_code.post_tool",
             "timeout": 2000
           }
         ]
