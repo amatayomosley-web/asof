@@ -16,6 +16,7 @@ flow to keep its log clean.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,30 @@ from typing import Optional
 # resolution; NFS has clock-skew issues; some network filesystems lag.
 # A 2-second tolerance prevents false-stale verdicts on these systems.
 MTIME_TOLERANCE_SECONDS = 2.0
+
+# Files larger than this are not hashed (latency budget — hashing reads the
+# whole file). Over-cap files fall back to size/mtime only. Configurable via
+# ASOF_HASH_CAP_BYTES. See docs/staleness-surfacing-design.md.
+DEFAULT_HASH_CAP_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def content_hash(path: str | Path, cap_bytes: int = DEFAULT_HASH_CAP_BYTES) -> Optional[str]:
+    """SHA-256 of a file's bytes, or None if it doesn't exist, can't be read,
+    or exceeds cap_bytes. Streamed so large (but under-cap) files don't spike
+    memory. Note: hashes the FILE, not the read-result the model ingested —
+    see docs for the partial-read caveat."""
+    try:
+        p = Path(path)
+        st = p.stat()
+        if st.st_size > cap_bytes:
+            return None
+        h = hashlib.sha256()
+        with p.open("rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except (OSError, ValueError):
+        return None
 
 # Substrate write tools (Claude Code names; adapters override if needed).
 WRITE_TOOL_NAMES = frozenset({
@@ -100,6 +125,9 @@ def classify_file_freshness(
     *,
     later_self_writes: Optional[list[float]] = None,
     tolerance: float = MTIME_TOLERANCE_SECONDS,
+    size_at_read: Optional[int] = None,
+    hash_at_read: Optional[str] = None,
+    hash_cap_bytes: int = DEFAULT_HASH_CAP_BYTES,
 ) -> dict:
     """Compare the file's current mtime to the mtime captured at read time.
 
@@ -164,6 +192,41 @@ def classify_file_freshness(
                     "age_seconds": age,
                     "drift_seconds": drift,
                 }
+
+    # Size rung — a sound one-way signal. Different byte count ⇒ content
+    # definitely changed (confident stale, no hash). Same size is inconclusive
+    # (could be a no-op write or an equal-length edit) and falls through to the
+    # hash rung.
+    current_size = s.get("size_bytes")
+    base = {"current_mtime": current_mtime, "age_seconds": age, "drift_seconds": drift}
+    if size_at_read is not None and current_size is not None:
+        if current_size != size_at_read:
+            return {
+                "verdict": "stale",
+                "reason": f"size changed {size_at_read}->{current_size} bytes after read",
+                **base,
+            }
+        # size unchanged — hash rung (only when a read-time baseline exists)
+        if hash_at_read is not None:
+            current_hash = content_hash(path, cap_bytes=hash_cap_bytes)
+            if current_hash is not None:
+                if current_hash == hash_at_read:
+                    return {
+                        "verdict": "fresh",
+                        "reason": "content identical despite mtime change (no-op write)",
+                        **base,
+                    }
+                return {
+                    "verdict": "stale",
+                    "reason": f"content changed (same size) {format_drift(drift)} after read",
+                    **base,
+                }
+            # over hash cap — can't verify
+            return {
+                "verdict": "stale",
+                "reason": f"mtime moved, size unchanged, too large to hash-verify",
+                **base,
+            }
 
     return {
         "verdict": "stale",

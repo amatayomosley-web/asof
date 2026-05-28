@@ -95,6 +95,8 @@ def _evaluate_working_set(records: list[dict]) -> list[dict]:
             path,
             mtime_at_read,
             later_self_writes=self_writes.get(path, []),
+            size_at_read=r.get("size_bytes"),
+            hash_at_read=r.get("hash_at_read"),
         )
         if verdict["verdict"] == "stale":
             drift_s = verdict.get("drift_seconds", 0)

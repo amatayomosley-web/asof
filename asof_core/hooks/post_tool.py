@@ -134,6 +134,25 @@ def _url_capture_enabled() -> bool:
     return False
 
 
+def _content_hash_enabled() -> bool:
+    """Check config + env for whether read-time content hashing is enabled.
+    Off by default — hashing reads the whole file (capped). Enables the
+    no-op-write precision rung in classify_file_freshness."""
+    import os
+    if os.environ.get("ASOF_CONTENT_HASH", "").lower() in ("on", "true", "1"):
+        return True
+    try:
+        config_path = Path.home() / ".asof" / "config.json"
+        if config_path.is_file():
+            with config_path.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            if cfg.get("precision", {}).get("hash") is True:
+                return True
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    return False
+
+
 def _summarize_input(tool_name: str, tool_input: dict) -> str:
     """Single-line summary of tool input, capped to ~300 chars."""
     if not isinstance(tool_input, dict):
@@ -198,6 +217,15 @@ def post_tool(
                     record["mtime_at_read"] = stat["mtime_epoch"]
                     record["mtime_iso"] = stat["mtime_iso"]
                     record["size_bytes"] = stat["size_bytes"]
+                    # Opt-in content-hash baseline (Class C precision). Off by
+                    # default — hashing reads the whole file. When on, lets the
+                    # watch hook tell a no-op write (identical content, moved
+                    # mtime) from a real same-size change. Capped by size.
+                    if tool_name == "Read" and _content_hash_enabled():
+                        from asof_core.stat import content_hash
+                        h = content_hash(file_path)
+                        if h is not None:
+                            record["hash_at_read"] = h
 
         # For URL fetches, optionally capture ETag/Last-Modified via HEAD
         # (only fires when config opts in — network cost discipline)
