@@ -34,10 +34,15 @@ def main() -> int:
 
         session_id = event.get("session_id") or "unknown-session"
 
+        tool_response = event.get("tool_response")
+        if not isinstance(tool_response, dict):
+            tool_response = None
+
         post_tool(
             session_id=session_id,
             tool_name=tool_name,
             tool_input=tool_input,
+            tool_response=tool_response,
             now=datetime.now(timezone.utc),
         )
     except (json.JSONDecodeError, OSError, ValueError, TypeError):

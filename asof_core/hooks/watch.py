@@ -133,6 +133,7 @@ def _evaluate_working_set(records: list[dict],
                 "reason": verdict["reason"],
                 "verdict": "stale",
                 "current_mtime": verdict.get("current_mtime"),
+                "read_excerpt": r.get("read_excerpt"),
             })
     return stale
 

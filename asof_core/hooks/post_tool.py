@@ -153,6 +153,49 @@ def _content_hash_enabled() -> bool:
     return False
 
 
+def _quote_datum_enabled() -> bool:
+    """Check config + env for whether to capture a read-content excerpt.
+    Off by default — adds a short snippet per Read to the tool log. When on,
+    lets the watch hook co-locate a copy of the (possibly stale) datum with
+    its STALE warning (display-only; never feeds the freshness verdict)."""
+    import os
+    if os.environ.get("ASOF_QUOTE_DATUM", "").lower() in ("on", "true", "1"):
+        return True
+    try:
+        config_path = Path.home() / ".asof" / "config.json"
+        if config_path.is_file():
+            with config_path.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            if cfg.get("surfacing", {}).get("quote_datum") is True:
+                return True
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    return False
+
+
+def _read_excerpt(tool_response: dict, max_len: int = 140) -> str:
+    """A short, whitespace-collapsed snippet of a Read's returned content.
+    Display-only — co-locates a copy of the datum with its staleness warning.
+    Returns '' when no usable text content is present."""
+    content = tool_response.get("content") if isinstance(tool_response, dict) else None
+    if isinstance(content, list):
+        parts: list[str] = []
+        for b in content:
+            if isinstance(b, dict):
+                t = b.get("text") or b.get("content") or ""
+                if isinstance(t, str):
+                    parts.append(t)
+            elif isinstance(b, str):
+                parts.append(b)
+        content = " ".join(parts)
+    if not isinstance(content, str) or not content:
+        return ""
+    collapsed = " ".join(content.split())
+    if len(collapsed) > max_len:
+        return collapsed[:max_len].rstrip() + "…"
+    return collapsed
+
+
 def _summarize_input(tool_name: str, tool_input: dict) -> str:
     """Single-line summary of tool input, capped to ~300 chars."""
     if not isinstance(tool_input, dict):
@@ -180,6 +223,7 @@ def post_tool(
     session_id: str,
     tool_name: str,
     tool_input: dict,
+    tool_response: Optional[dict] = None,
     log_dir: Optional[Path] = None,
     now: Optional[datetime] = None,
 ) -> None:
@@ -226,6 +270,13 @@ def post_tool(
                         h = content_hash(file_path)
                         if h is not None:
                             record["hash_at_read"] = h
+                    # Opt-in datum excerpt (surfacing co-location). Captures a
+                    # snippet of what was actually read from tool_response so a
+                    # copy of the datum can travel with its STALE warning.
+                    if tool_name == "Read" and tool_response and _quote_datum_enabled():
+                        excerpt = _read_excerpt(tool_response)
+                        if excerpt:
+                            record["read_excerpt"] = excerpt
 
         # For URL fetches, optionally capture ETag/Last-Modified via HEAD
         # (only fires when config opts in — network cost discipline)

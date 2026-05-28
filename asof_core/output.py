@@ -65,6 +65,11 @@ def _format_file_freshness(stale_files: list[dict]) -> list[str]:
     lines = ["", "## File freshness (this session)"]
     for f in stale_files:
         lines.append(f"  STALE  {f['path']:50s}  {f.get('reason', 'mtime moved after read')}")
+        # Co-locate a copy of the datum with its warning (opt-in capture), so
+        # an LLM reasoning from the cached read sees the stale flag beside it.
+        excerpt = f.get("read_excerpt")
+        if excerpt:
+            lines.append(f'           ↪ you read: "{excerpt}"')
     return lines
 
 
