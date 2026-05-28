@@ -116,18 +116,27 @@ Tiered invalidation evidence:
 
 ## Empirical evidence
 
-Current evidence base: A/B tests on identical prompts across three Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) and three local open-source models (Gemma 4 e4b, Mistral Small 3, DeepSeek-R1 32B) via Ollama. Categorical behavior change observed on multiple effect-types across both surfaces. See [tests/abtests/](tests/abtests/) for the full battery, runners, and per-model results.
+Tested 2026-05-28 across **six models × 11 prompts × 3 seeds = 429 cells**, scored both mechanically and by LLM-judge (Claude Opus, 198 A/B pairs). Models: three Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) via `claude -p` in isolated subprocess + three local OSS models (Gemma 4 e4b, Mistral Small 3 24B, DeepSeek-R1 32B) via Ollama with vendor-recommended sampling.
 
-**Categorical behavior change observed** on:
-- In-context file content with externally-changed mtime (Tests 3 and 4)
-- User-pasted data with embedded timestamps (Tests 7, 8, 9, including the NVDA case)
-- Pseudo-stable factual claims (Test 7, Paris hotel pricing)
+Judge-scored weighted flag-rate per (model, category). Categorical = ≥ 80%.
 
-**Marginal change** on:
-- Real-time data queries the model already refuses by default (Tests 1 and 6: Python version, mortgage rate)
-- Continuity-between-turns claims the model already handles (Test 2)
+| Effect-type | gemma4-e4b | mistral-small | deepseek-r1 | claude-haiku | claude-sonnet | claude-opus |
+|---|---|---|---|---|---|---|
+| refuse-vs-compute | **92%** | 67% | 58% | **92%** | **92%** | **100%** |
+| stale-vs-live | 50% | **100%** | 67% | 0% | 33% | 25% |
+| cached-vs-recheck | 17% | 50% | 33% | 50% | 50% | 33% |
+| pre-computed-gap | 50% | 42% | 42% | 75% | 75% | **83%** |
+| static-vs-versioned | 17% | 25% | 33% | 25% | 42% | 75% |
+| **control** | **0%** | **0%** | **0%** | **0%** | **0%** | **0%** |
 
-Full A/B transcripts in [tests/abtests/](tests/abtests/).
+**Categorical wins**: refuse-vs-compute on 5/6 models (the cleanest AsOf effect); stale-vs-live on Mistral Small 3 (cutoff 2023-10 → today is 2.6-year gap, pre-computed math is load-bearing); pre-computed-gap on Opus.
+
+**Architecture findings worth knowing**:
+- **Stale-vs-live splits by harness, not model**: Claude tiers show 0-33% because Claude Code injects today's date natively. OSS models via Ollama show 50-100% because the harness doesn't.
+- **Pre-computed-gap rewards capacity**: 75-83% on bigger Claude tiers, 42-50% on OSS — the model has to integrate gap math with domain reasoning.
+- **Controls clean across all six models**: AsOf doesn't fire opportunistically on neutral content. Zero false-positive flag-rate on every model.
+
+See [tests/abtests/findings.md](tests/abtests/findings.md) for the full writeup including adversarial notes, falsification paths, and the Gemma-thinking-mode token-budget caveat. Battery and runners are in [tests/abtests/](tests/abtests/).
 
 ---
 
