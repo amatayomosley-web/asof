@@ -11,6 +11,7 @@ phrasing produce a structured block.
 """
 from __future__ import annotations
 
+import fnmatch
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -77,11 +78,35 @@ def _build_self_writes_index(records: list[dict]) -> dict[str, list[float]]:
     return writes
 
 
-def _evaluate_working_set(records: list[dict]) -> list[dict]:
+def _excluded_from_staleness(path: str, exclude_globs: list[str]) -> bool:
+    """True if `path` matches any staleness-exclusion glob.
+
+    Drops transient/agent-owned paths (e.g. background-task .output files —
+    process I/O the agent spawned, not context it must keep fresh) from
+    staleness tracking. Config/adapter-driven, never a hardcoded core
+    constant.
+
+    Matching is slash-normalized so one config pattern works across
+    platforms and against the backslash paths Windows logs. fnmatch's `*`
+    spans separators, so a single `*` can cover a variable session-id
+    segment."""
+    if not exclude_globs:
+        return False
+    norm = path.replace("\\", "/")
+    for pat in exclude_globs:
+        if isinstance(pat, str) and pat and fnmatch.fnmatch(norm, pat.replace("\\", "/")):
+            return True
+    return False
+
+
+def _evaluate_working_set(records: list[dict],
+                          exclude_globs: Optional[list[str]] = None) -> list[dict]:
     """Walk the tool log, compute current freshness for each Read entry.
     Returns only stale verdicts (per adaptive rendering — fresh files
-    don't get surfaced)."""
+    don't get surfaced). Reads whose path matches an entry in
+    `exclude_globs` are skipped entirely (transient/agent-owned paths)."""
     self_writes = _build_self_writes_index(records)
+    globs = exclude_globs or []
     stale: list[dict] = []
     for r in records:
         if r.get("tool_name") != "Read":
@@ -89,6 +114,8 @@ def _evaluate_working_set(records: list[dict]) -> list[dict]:
         path = r.get("input_summary") or ""
         mtime_at_read = r.get("mtime_at_read")
         if not path or mtime_at_read is None:
+            continue
+        if _excluded_from_staleness(path, globs):
             continue
 
         verdict = classify_file_freshness(
@@ -187,6 +214,8 @@ def watch(
             - patterns.high_confidence: bool (default True)
             - patterns.medium_confidence: bool (default True)
             - patterns.domains: list[str] (default [])
+            - staleness.exclude_globs: list[str] (default []) — Read paths
+              matching any glob are dropped from staleness tracking
             - mode: "silent" | "normal" | "strict" (default "normal")
         now: current datetime. Defaults to UTC now.
 
@@ -206,8 +235,16 @@ def watch(
     log_path = log_dir / f"{session_id}.jsonl"
     records = _load_tool_log(log_path)
 
-    # File-freshness verdicts (stale only — adaptive rendering)
-    stale_files = _evaluate_working_set(records)
+    # File-freshness verdicts (stale only — adaptive rendering). Transient/
+    # agent-owned paths (background-task .output, etc.) are dropped via config
+    # staleness.exclude_globs — process I/O the agent spawned, not context it
+    # must keep fresh. Empty/absent list = track everything (prior behavior).
+    staleness_cfg = config.get("staleness", {})
+    exclude_globs = (
+        staleness_cfg.get("exclude_globs", [])
+        if isinstance(staleness_cfg, dict) else []
+    )
+    stale_files = _evaluate_working_set(records, exclude_globs=exclude_globs)
 
     # Path mentions in the prompt
     mentioned = _evaluate_path_mentions(prompt_text) if prompt_text else []

@@ -20,6 +20,17 @@ CLAUDE_HOME = Path.home() / ".claude"
 SKILL_DIR = CLAUDE_HOME / "skills" / "asof"
 SETTINGS_PATH = CLAUDE_HOME / "settings.json"
 
+ASOF_HOME = Path.home() / ".asof"
+ASOF_CONFIG_PATH = ASOF_HOME / "config.json"
+
+# Claude Code writes background-task stdout to per-session temp files at
+# <temp>/claude/<slug>/<session>/tasks/<id>.output. The agent reads those as
+# transient process I/O it spawned — not durable context — so they must never
+# surface as STALE. Seeded as a staleness-exclusion glob; matching is
+# slash-normalized in watch, so this one pattern also covers the backslash
+# paths Windows logs, and `*` spans the variable session-id segment.
+CLAUDE_TASK_OUTPUT_GLOB = "*/claude/*/tasks/*.output"
+
 ADAPTER_DIR = Path(__file__).resolve().parent
 
 
@@ -87,6 +98,47 @@ def patch_settings() -> bool:
     return changed
 
 
+def seed_config() -> bool:
+    """Ensure ~/.asof/config.json excludes Claude Code's transient
+    task-output paths from staleness tracking. Idempotent and additive —
+    preserves existing config and any other exclude globs.
+
+    Returns True if a change was written, False if already present.
+    """
+    if ASOF_CONFIG_PATH.is_file():
+        try:
+            with ASOF_CONFIG_PATH.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            if not isinstance(cfg, dict):
+                cfg = {}
+        except (OSError, json.JSONDecodeError, ValueError):
+            cfg = {}
+    else:
+        cfg = {}
+
+    staleness = cfg.get("staleness")
+    if not isinstance(staleness, dict):
+        staleness = {}
+    globs = staleness.get("exclude_globs")
+    if not isinstance(globs, list):
+        globs = []
+
+    if CLAUDE_TASK_OUTPUT_GLOB in globs:
+        print("  config.json already excludes Claude task-output paths; no change")
+        return False
+
+    globs.append(CLAUDE_TASK_OUTPUT_GLOB)
+    staleness["exclude_globs"] = globs
+    cfg["staleness"] = staleness
+
+    ASOF_HOME.mkdir(parents=True, exist_ok=True)
+    with ASOF_CONFIG_PATH.open("w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
+        f.write("\n")
+    print(f"  config.json seeded with task-output exclusion at {ASOF_CONFIG_PATH}")
+    return True
+
+
 def verify() -> bool:
     """Quick verification: can we import asof_core, do the hook scripts
     exist on disk, does settings.json have the entries?"""
@@ -137,6 +189,7 @@ def main() -> int:
 
     install_skill_file()
     patch_settings()
+    seed_config()
     ok = verify()
 
     print()
