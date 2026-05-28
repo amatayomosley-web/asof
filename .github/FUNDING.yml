@@ -1,0 +1,20 @@
+# GitHub Sponsors and other funding platforms for AsOf.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# GitHub Sponsors — requires enrollment at https://github.com/sponsors/accounts
+github: amatayomosley-web
+
+# Other platforms (uncomment + fill in if you want them):
+# patreon: USERNAME
+# open_collective: PROJECT
+# ko_fi: USERNAME
+# tidelift: PLATFORM-NAME/PACKAGE-NAME
+# community_bridge: PROJECT-NAME
+# liberapay: USERNAME
+# issuehunt: USERNAME
+# otechie: USERNAME
+# lfx_crowdfunding: LFX-PROJECT-NAME
+# polar: USERNAME
+# buy_me_a_coffee: USERNAME
+# thanks_dev: GITHUB-USERNAME
+# custom: ['https://example.com/donate']
