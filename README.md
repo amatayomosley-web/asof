@@ -37,7 +37,7 @@ The hook does all date arithmetic in Python. The model reads pre-computed verdic
 ## Install
 
 ```bash
-pip install asof
+pip install asoftime
 asof install
 ```
 

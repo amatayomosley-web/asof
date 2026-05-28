@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "asof"
+name = "asoftime"
 version = "0.1.0"
 description = "Temporal-awareness skill for tool-using LLMs. Surfaces freshness verdicts on in-context data so stale information doesn't poison fresh reasoning."
 readme = "README.md"
