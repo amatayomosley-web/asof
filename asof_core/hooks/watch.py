@@ -53,11 +53,23 @@ def _load_tool_log(log_path: Path) -> list[dict]:
 def _build_self_writes_index(records: list[dict]) -> dict[str, list[float]]:
     """For each file path the substrate wrote to, collect the write epochs.
     Used by classify_file_freshness to exclude self-induced mtime changes
-    from the stale verdict."""
-    from asof_core.hooks.post_tool import _FILE_TOOLS
+    from the stale verdict.
+
+    Two sources of self-writes:
+    - Native write tools (Write/Edit/MultiEdit/NotebookEdit): the recorded
+      mtime_at_read is the post-write mtime.
+    - SELF_WRITE_MARKER records: emitted by post_tool when an external tool
+      (Bash, PowerShell) wrote a previously-Read file concurrently with the
+      command's completion (sed -i, >, cp, git checkout, formatters, ...).
+      Without these, Bash file edits are misattributed as external staleness.
+    """
+    from asof_core.hooks.post_tool import _FILE_TOOLS, SELF_WRITE_MARKER
     writes: dict[str, list[float]] = {}
     for r in records:
-        if r.get("tool_name") in _FILE_TOOLS and r.get("tool_name") != "Read":
+        tool = r.get("tool_name")
+        is_native_write = tool in _FILE_TOOLS and tool != "Read"
+        is_bash_self_write = tool == SELF_WRITE_MARKER
+        if is_native_write or is_bash_self_write:
             target = r.get("input_summary") or ""
             mtime = r.get("mtime_at_read")
             if target and mtime:

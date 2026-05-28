@@ -45,10 +45,75 @@ _VOLATILITY: dict[str, str] = {
 _FILE_TOOLS = frozenset({"Read", "Edit", "Write", "MultiEdit", "NotebookEdit"})
 _URL_TOOLS = frozenset({"WebFetch", "WebSearch"})
 
+# Synthetic tool_name used for self-write records that the watch hook's
+# self-write index recognises. Emitted when an external-volatility tool
+# (Bash, PowerShell, ...) writes a previously-Read file as a side effect.
+SELF_WRITE_MARKER = "_asof_self_write"
+
+# Execution-window tolerance (seconds). A PostToolUse hook fires at command
+# completion; a file the command just wrote has mtime ~= completion time.
+# A tracked file whose current mtime falls within this window of completion
+# is attributed to the just-completed command (self-write), not an external
+# editor. Kept tight: catches the common fast file-mutating commands
+# (sed -i, >, tee, cp, mv, git checkout, formatters) whose write lands ~1s
+# before the hook fires, while keeping the coincidental-external-write
+# window small. Long-running commands that write a file many seconds before
+# completing are NOT matched — the file stays conservatively flagged STALE
+# (safe over-warn, never false silence).
+CONCURRENT_WRITE_TOLERANCE = 5.0
+
 
 def classify_tool(tool_name: str) -> str:
     """Return the volatility class for a tool name."""
     return _VOLATILITY.get(tool_name, "static")
+
+
+def _tracked_read_paths(log_path: Path) -> list[str]:
+    """Collect file paths the substrate Read this session, from the tool log.
+    These are the files whose freshness the watch hook tracks; they're the
+    candidates an external command might have written."""
+    paths: list[str] = []
+    seen: set[str] = set()
+    try:
+        with log_path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                if r.get("tool_name") == "Read":
+                    p = r.get("input_summary")
+                    if p and p not in seen:
+                        seen.add(p)
+                        paths.append(p)
+    except OSError:
+        pass
+    return paths
+
+
+def _detect_concurrent_self_writes(
+    log_path: Path,
+    now_epoch: float,
+    tolerance: float = CONCURRENT_WRITE_TOLERANCE,
+) -> list[tuple[str, float]]:
+    """After an external-volatility tool completes at `now_epoch`, find
+    previously-Read files whose current mtime is within `tolerance` of
+    completion — i.e. the just-completed command wrote them.
+
+    Execution-window invariant (anchored at completion): nothing external
+    writes a file in lockstep with the completion of the agent's own
+    command, so an aligned mtime means the command did it. Returns
+    [(path, current_mtime_epoch)] for each such file."""
+    out: list[tuple[str, float]] = []
+    for path in _tracked_read_paths(log_path):
+        s = stat_now(path)
+        if s["exists"] and s["mtime_epoch"] is not None:
+            if abs(now_epoch - s["mtime_epoch"]) <= tolerance:
+                out.append((path, s["mtime_epoch"]))
+    return out
 
 
 def _url_capture_enabled() -> bool:
@@ -154,6 +219,25 @@ def post_tool(
 
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+        # External-volatility tools (Bash, PowerShell) can mutate files
+        # outside AsOf's Write/Edit tracking — sed -i, >, tee, cp, mv,
+        # git checkout, formatters, build steps. Because this hook fires at
+        # command completion, a file the command just wrote has mtime ~= now.
+        # Record those as self-writes so the watch hook doesn't misattribute
+        # the substrate's own Bash edits as external staleness.
+        if classify_tool(tool_name) == "external":
+            now_epoch = now.timestamp()
+            for sw_path, sw_mtime in _detect_concurrent_self_writes(log_path, now_epoch):
+                sw_record = {
+                    "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "tool_name": SELF_WRITE_MARKER,
+                    "input_summary": sw_path,
+                    "mtime_at_read": sw_mtime,
+                    "source_tool": tool_name,
+                }
+                with log_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps(sw_record, ensure_ascii=False) + "\n")
     except (OSError, TypeError, ValueError, json.JSONDecodeError):
         # Silent failure: never break the substrate's tool call
         pass
