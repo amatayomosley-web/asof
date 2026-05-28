@@ -103,8 +103,39 @@ def _evaluate_working_set(records: list[dict]) -> list[dict]:
                 "drift_human": format_duration(drift_s) if drift_s else "",
                 "reason": verdict["reason"],
                 "verdict": "stale",
+                "current_mtime": verdict.get("current_mtime"),
             })
     return stale
+
+
+def _accessed_paths_this_turn(records: list[dict], mentioned: list[dict],
+                              last_watch_ts: Optional[float]) -> set[str]:
+    """Paths the substrate touched since the previous watch fire — Reads
+    logged after last_watch_ts, plus paths mentioned in this turn's prompt.
+    Used to refresh working-set membership for the heartbeat decision."""
+    from datetime import datetime, timezone as _tz
+    accessed: set[str] = set()
+    for m in mentioned:
+        p = m.get("path")
+        if p:
+            accessed.add(p)
+    if last_watch_ts is None:
+        return accessed
+    for r in records:
+        if r.get("tool_name") != "Read":
+            continue
+        ts = r.get("ts")
+        if not ts:
+            continue
+        try:
+            epoch = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp()
+        except (ValueError, TypeError):
+            continue
+        if epoch >= last_watch_ts:
+            p = r.get("input_summary")
+            if p:
+                accessed.add(p)
+    return accessed
 
 
 def _evaluate_path_mentions(text: str) -> list[dict]:
@@ -178,6 +209,23 @@ def watch(
 
     # Path mentions in the prompt
     mentioned = _evaluate_path_mentions(prompt_text) if prompt_text else []
+
+    # Surfacing policy: don't broadcast every stale file every turn. Surface
+    # once, suppress repeats, re-surface on a heartbeat (while still in the
+    # working set) or a new delta. State persists in ~/.asof/session_state/.
+    from asof_core import surfacing
+    surf_state = surfacing.load_state(session_id)
+    current_turn = surf_state.get("turn", 0) + 1
+    surf_state["turn"] = current_turn
+    if stale_files:
+        accessed = _accessed_paths_this_turn(
+            records, mentioned, surf_state.get("last_watch_ts")
+        )
+        stale_files = surfacing.decide_surfacing(
+            stale_files, surf_state, current_turn, accessed
+        )
+    surf_state["last_watch_ts"] = now.timestamp()
+    surfacing.save_state(session_id, surf_state)
 
     # Timestamps in the prompt
     timestamps = find_timestamps(prompt_text, base_date=now.date()) if prompt_text else []
