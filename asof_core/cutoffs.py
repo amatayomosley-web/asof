@@ -56,6 +56,16 @@ TRAINING_CUTOFFS: dict[str, str] = {
     "llama-3.1-405b": "2023-12",
     # Mistral
     "mistral-large": "2023-12",
+    "mistral-small": "2023-10",          # per modelfile SYSTEM directive on Ollama mistral-small:latest
+    "mistral-small-3": "2023-10",
+    "mistral-nemo": "2024-04",           # NVIDIA partnership instruct; verify against vendor docs
+    # Google — Gemma family (open weights)
+    "gemma4-e4b": "2024-06",             # approximate; verify against Google AI Gemma 4 model card
+    "gemma4-e2b": "2024-06",             # approximate; verify against Google AI Gemma 4 model card
+    "gemma-3-27b-it": "2024-08",         # approximate; verify against vendor docs
+    # DeepSeek
+    "deepseek-r1-distill-qwen-32b": "2024-09",  # based on Qwen2.5-32B base; verify
+    "deepseek-r1": "2024-09",            # prefix-match fallback for ollama "deepseek-r1:32b" form
 }
 
 
