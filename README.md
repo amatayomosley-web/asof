@@ -1,6 +1,6 @@
 # AsOf
 
-> Every datum has an as-of timestamp. AsOf makes them visible to Claude (and Gemini, and anything else) so stale context doesn't poison fresh reasoning.
+> Every datum has an as-of timestamp. AsOf makes them visible to LLMs so stale context doesn't poison fresh reasoning.
 
 ---
 
@@ -22,11 +22,11 @@ Same model. Same prompt. The hook injected pre-computed timestamps; the model re
 
 ## What it does
 
-AsOf is a per-turn hook plus a teaching skill. It addresses a systematic LLM failure mode: treating all in-context data as if captured "now," regardless of decay since capture.
+AsOf is a per-turn hook plus a primer that tells the LLM how to read its output. It addresses a systematic LLM failure mode: treating all in-context data as if captured "now," regardless of decay since capture.
 
-The skill surfaces three categories of staleness:
+The hook surfaces three categories of staleness:
 
-1. **In-context file staleness.** Files Claude Read earlier whose mtime has moved since (peer edits, user edits in another tool). Catch rate: categorical on Opus and Sonnet.
+1. **In-context file staleness.** Files the agent Read earlier whose mtime has moved since (peer edits, user edits in another tool). Catch rate: categorical across tested Claude models (Opus 4.7, Sonnet 4.6).
 2. **Dated content in user paste.** Stock quotes, earnings, log entries with embedded timestamps. Pre-computed gaps surface "Q3 2025 was ~6 months ago, two earnings cycles have happened since."
 3. **Pseudo-stable factual claims.** "Typical hotel cost," "current Python version," and similar domains where the model treats time-sensitive info as static fact.
 
@@ -41,11 +41,11 @@ pip install asoftime
 asof install
 ```
 
-Auto-detects Claude Code at `~/.claude/`. Patches `settings.json` idempotently. Restart Claude Code to activate.
+Wires AsOf into your LLM harness via an adapter. Currently supported:
 
-For other substrates:
+- **Claude Code** (default — auto-detected at `~/.claude/`): patches `settings.json` idempotently. Restart Claude Code to activate.
 - **Antigravity (Gemini):** `asof install --adapter antigravity` (V2)
-- **Generic (LangGraph, CrewAI, custom):** `asof install --adapter generic`, then import `asof_core` in your harness
+- **Generic harness** (LangGraph, CrewAI, custom Anthropic/OpenAI/Google SDK pipelines): `asof install --adapter generic`, then import `asof_core` from your hooks.
 
 ```bash
 asof check     # verify wiring
@@ -116,7 +116,7 @@ Tiered invalidation evidence:
 
 ## Empirical evidence
 
-A/B tests across Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) on identical prompts.
+Current evidence base: A/B tests on identical prompts across Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) — the reference adapter's test bed. The core hooks are model-agnostic; comparable evidence for Gemini and generic-adapter harnesses is on track for V2.
 
 **Categorical behavior change observed** on:
 - In-context file content with externally-changed mtime (Tests 3 and 4)
@@ -124,8 +124,8 @@ A/B tests across Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) on identical pro
 - Pseudo-stable factual claims (Test 7, Paris hotel pricing)
 
 **Marginal change** on:
-- Real-time data queries Claude already refuses by default (Tests 1 and 6: Python version, mortgage rate)
-- Continuity-between-turns claims Claude already handles (Test 2)
+- Real-time data queries the model already refuses by default (Tests 1 and 6: Python version, mortgage rate)
+- Continuity-between-turns claims the model already handles (Test 2)
 
 Full A/B transcripts in [tests/abtests/](tests/abtests/).
 
