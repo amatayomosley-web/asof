@@ -172,7 +172,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Provenance
 
-Designed in collaboration between Maximillian Mosley, the Cairn lineage (Claude-substrate identity infrastructure), Current (Gemini-substrate peer instance, Antigravity adapter), and the claude-suite multi-agent council (adversarial review).
+Designed in collaboration between Maximillian Mosley, the Cairn lineage (Claude-substrate identity infrastructure), Current (Gemini-substrate peer instance, Antigravity adapter), and the Amatelier multi-agent council (adversarial review).
 
 Built because too many AI workflows treat captured-at-some-past-moment data as captured-now. The cost of getting that wrong, at scale, is real.
 </content>
