@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asof"
+version = "0.1.0"
+description = "Temporal-awareness skill for tool-using LLMs. Surfaces freshness verdicts on in-context data so stale information doesn't poison fresh reasoning."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "William Bobos" },
+]
+keywords = ["llm", "claude", "gemini", "temporal", "staleness", "rag", "ai-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "dateparser>=1.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/amatayomosley-web/asof"
+Repository = "https://github.com/amatayomosley-web/asof"
+Documentation = "https://github.com/amatayomosley-web/asof/tree/main/docs"
+Issues = "https://github.com/amatayomosley-web/asof/issues"
+
+[project.scripts]
+asof = "asof_core.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["asof_core*", "adapters*"]

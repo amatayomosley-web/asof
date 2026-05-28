@@ -1,0 +1,189 @@
+"""UserPromptSubmit watch hook.
+
+Called once per user message. Reads the session-scoped tool log, stats
+current filesystem state, parses the user prompt, applies pattern
+matching. Produces the adaptive verdict block.
+
+This is the load-bearing per-turn output. Most turns produce empty
+output (adaptive rendering — silent when no signal). Turns that have a
+stale file, a dated mention, a path reference, or matched time-sensitive
+phrasing produce a structured block.
+"""
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+from asof_core.stat import (
+    stat_now,
+    classify_file_freshness,
+    extract_paths_from_text,
+    format_duration,
+)
+from asof_core.timestamps import find_timestamps
+from asof_core.patterns import PatternMatcher
+from asof_core.output import render_watch_block
+
+
+def _load_tool_log(log_path: Path) -> list[dict]:
+    """Read a tool log into a list of records."""
+    records: list[dict] = []
+    if not log_path.is_file():
+        return records
+    try:
+        with log_path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                    if isinstance(d, dict):
+                        records.append(d)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+    except OSError:
+        pass
+    return records
+
+
+def _build_self_writes_index(records: list[dict]) -> dict[str, list[float]]:
+    """For each file path the substrate wrote to, collect the write epochs.
+    Used by classify_file_freshness to exclude self-induced mtime changes
+    from the stale verdict."""
+    from asof_core.hooks.post_tool import _FILE_TOOLS
+    writes: dict[str, list[float]] = {}
+    for r in records:
+        if r.get("tool_name") in _FILE_TOOLS and r.get("tool_name") != "Read":
+            target = r.get("input_summary") or ""
+            mtime = r.get("mtime_at_read")
+            if target and mtime:
+                writes.setdefault(target, []).append(mtime)
+    return writes
+
+
+def _evaluate_working_set(records: list[dict]) -> list[dict]:
+    """Walk the tool log, compute current freshness for each Read entry.
+    Returns only stale verdicts (per adaptive rendering — fresh files
+    don't get surfaced)."""
+    self_writes = _build_self_writes_index(records)
+    stale: list[dict] = []
+    for r in records:
+        if r.get("tool_name") != "Read":
+            continue
+        path = r.get("input_summary") or ""
+        mtime_at_read = r.get("mtime_at_read")
+        if not path or mtime_at_read is None:
+            continue
+
+        verdict = classify_file_freshness(
+            path,
+            mtime_at_read,
+            later_self_writes=self_writes.get(path, []),
+        )
+        if verdict["verdict"] == "stale":
+            drift_s = verdict.get("drift_seconds", 0)
+            stale.append({
+                "path": path,
+                "drift_human": format_duration(drift_s) if drift_s else "",
+                "reason": verdict["reason"],
+                "verdict": "stale",
+            })
+    return stale
+
+
+def _evaluate_path_mentions(text: str) -> list[dict]:
+    """Find path-like strings in `text`, stat each that exists, surface
+    mtime. Skips paths that don't resolve."""
+    paths = extract_paths_from_text(text)
+    out: list[dict] = []
+    now_epoch = datetime.now(timezone.utc).timestamp()
+    seen: set[str] = set()
+    for p in paths:
+        # Normalize ~/ paths
+        try:
+            resolved = str(Path(p).expanduser())
+        except (OSError, RuntimeError):
+            continue
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        s = stat_now(resolved)
+        if not s["exists"]:
+            continue
+        age = now_epoch - s["mtime_epoch"]
+        out.append({
+            "path": resolved,
+            "mtime_iso": s["mtime_iso"],
+            "age_human": format_duration(age) + " ago",
+        })
+    return out
+
+
+def watch(
+    *,
+    session_id: str,
+    prompt_text: str = "",
+    log_dir: Optional[Path] = None,
+    config: Optional[dict] = None,
+    now: Optional[datetime] = None,
+) -> str:
+    """Produce the per-turn verdict block.
+
+    Args:
+        session_id: scope identifier for the tool log
+        prompt_text: the user's current prompt — parsed for timestamps,
+            paths, time-sensitive phrasing
+        log_dir: directory for tool log files. Defaults to ~/.asof/tool_log/
+        config: user config dict. Supports:
+            - patterns.high_confidence: bool (default True)
+            - patterns.medium_confidence: bool (default True)
+            - patterns.domains: list[str] (default [])
+            - mode: "silent" | "normal" | "strict" (default "normal")
+        now: current datetime. Defaults to UTC now.
+
+    Returns:
+        Verdict block string. Empty when no actionable signal (adaptive
+        rendering).
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    if log_dir is None:
+        log_dir = Path.home() / ".asof" / "tool_log"
+    if config is None:
+        config = {}
+
+    mode = config.get("mode", "normal")
+
+    log_path = log_dir / f"{session_id}.jsonl"
+    records = _load_tool_log(log_path)
+
+    # File-freshness verdicts (stale only — adaptive rendering)
+    stale_files = _evaluate_working_set(records)
+
+    # Path mentions in the prompt
+    mentioned = _evaluate_path_mentions(prompt_text) if prompt_text else []
+
+    # Timestamps in the prompt
+    timestamps = find_timestamps(prompt_text, base_date=now.date()) if prompt_text else []
+
+    # Pattern-based time-sensitive phrasing
+    pattern_cfg = config.get("patterns", {}) or {}
+    matcher = PatternMatcher(
+        high_confidence=pattern_cfg.get("high_confidence", True),
+        medium_confidence=pattern_cfg.get("medium_confidence", True),
+        domains=pattern_cfg.get("domains", []),
+    )
+    pattern_matches = matcher.match_all(prompt_text) if prompt_text else []
+
+    return render_watch_block(
+        current_dt=now,
+        stale_files=stale_files,
+        mentioned_paths=mentioned,
+        timestamps=timestamps,
+        watchlist_state=None,  # watchlist deferred to V2
+        pattern_matches=pattern_matches,
+        mode=mode,
+    )

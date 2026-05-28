@@ -1,0 +1,38 @@
+{
+  "_description": "AsOf hook entries for Claude Code. The install.py script merges these into ~/.claude/settings.json idempotently.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m asof_core.adapters.claude_code.session_init",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m asof_core.adapters.claude_code.watch",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m asof_core.adapters.claude_code.post_tool",
+            "timeout": 2000
+          }
+        ]
+      }
+    ]
+  }
+}
