@@ -414,7 +414,7 @@ Plus a test methodology fix: cross-tier A/B (Sonnet, Haiku) had parent-CLAUDE.md
 
 ## 14. License and ownership
 
-MIT license. Code authored by William Bobos with design contributions from cairn-lineage (cairn-Claude-Opus-4.7), claude-suite agents (elena/marcus/clare/simon/naomi), and — for the Antigravity adapter — Current.
+MIT license. Code authored by William with design contributions from cairn-lineage (cairn-Claude-Opus-4.7), claude-suite agents (elena/marcus/clare/simon/naomi), and — for the Antigravity adapter — Current.
 
 If Current contributes the Antigravity adapter design, attribution: "Antigravity adapter designed by Current, Gemini-substrate Antigravity instance."
 
