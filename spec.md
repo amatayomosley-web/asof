@@ -49,12 +49,12 @@ Tiered application by signal availability:
 
 ## 4. Hook architecture
 
-Three hook fire points (with Claude Code naming conventions; substrate-adapter maps these to equivalent events):
+Three abstract hook fire points. Each harness's adapter maps these to the substrate's own event names — the names used below happen to match Claude Code's terminology because it was the first adapter built, but the design is harness-agnostic:
 
-### SessionStart (one fire per session, at session init)
+### Session-start (one fire per session, at session init)
 
 `asof_init.py` runs once:
-- Detects model ID from environment (substrate-specific; e.g., Claude Code session JSONL)
+- Detects model ID from environment (substrate-specific surface — e.g., the session transcript file, an environment variable, or an explicit config setting)
 - Looks up training cutoff from `asof_core.cutoffs.TRAINING_CUTOFFS`
 - Computes cutoff gap to current date in Python
 - Initializes session-scoped tool log file
@@ -301,9 +301,9 @@ asof/
 └── pyproject.toml                Python package metadata
 ```
 
-## 10. The Claude Code adapter (reference shape)
+## 10. Reference adapter: Claude Code
 
-For the Antigravity adapter to mirror in shape but adapt in mechanism:
+Built first; other adapters mirror this shape and adapt the wiring mechanism to their host harness.
 
 ### Hook integration
 
@@ -342,20 +342,20 @@ Three hook events wired in `~/.claude/settings.json`:
 
 ### Empirical validation
 
-A/B test results on Claude Code, Opus 4.7:
+Initial A/B test results on this adapter, Opus 4.7:
 - File-staleness case: without AsOf treats cached file as authoritative; with AsOf re-reads before edit
 - Dated-content case (NVDA): without AsOf treats Q3 2025 as prospective next earnings; with AsOf recognizes two quarters have already happened
 - Pseudo-stable facts (Paris hotels): without AsOf treats as static; with AsOf flags staleness with mechanism
 
-Same pattern verified on Sonnet 4.6. Haiku 4.5 mixed (refuse-default masks signal on financial domains).
+Same pattern verified on Sonnet 4.6. Haiku 4.5 mixed (refuse-default masks signal on financial domains). Subsequent cross-substrate validation against local open-source models (Gemma 4, Mistral Small 3, DeepSeek-R1) is documented in `tests/abtests/`.
 
-## 11. What Current designs: the Antigravity adapter
+## 11. Second adapter: Antigravity (Gemini-substrate)
 
-Current writes `adapters/antigravity/` with the same shape as `adapters/claude_code/` but using Antigravity's hook system, payload format, and Gemini-substrate conventions.
+`adapters/antigravity/` mirrors the structure of `adapters/claude_code/` but uses Antigravity's hook system, payload format, and Gemini-substrate conventions.
 
 Specific deliverables for the adapter:
 
-1. **`adapters/antigravity/SKILL.md`** — the teaching prose for Gemini. Same content shape as the Claude version but tuned for Gemini's reasoning patterns and any substrate-specific quirks Current knows about.
+1. **`adapters/antigravity/SKILL.md`** — the teaching primer for Gemini. Same content shape as the reference adapter but tuned for Gemini's reasoning patterns and any substrate-specific quirks observed by Current.
 
 2. **`adapters/antigravity/hooks_snippet.json`** — the fragment that gets merged into `~/.gemini/config/hooks.json` to wire up AsOf's three hooks (init, watch, log).
 

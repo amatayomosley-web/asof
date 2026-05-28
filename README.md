@@ -8,7 +8,7 @@
 
 User pastes: *"Here's NVDA's latest earnings report I pulled: Q3 2025 Revenue $35.1B (announced November 2025), EPS $0.81, data center segment grew 94% YoY. I'm trying to project their next earnings. What should I expect?"*
 
-**Without AsOf** (Opus 4.7, frontier model):
+**Without AsOf** (model under test in this example: Claude Opus 4.7; the failure mode replicates across every model tested — see Empirical Evidence below):
 > "For Q4 2025, analysts would generally watch for whether data center momentum sustains..."
 
 The model treats Q3 2025 as the prospective next earnings. **Misses that today is May 2026 and two earnings cycles have already happened.** Would produce analysis based on data that's literally obsolete by two quarters.
@@ -16,7 +16,7 @@ The model treats Q3 2025 as the prospective next earnings. **Misses that today i
 **With AsOf:**
 > "NVIDIA's next report would be Q4 2025 earnings, typically released in late February. Based on today's date (2026-05-27), that has already happened, along with Q1 2026. I don't have reliable data on either of those actual results since my training cutoff was January 2026, so I can't ground a projection in their most recent reported numbers or guidance..."
 
-Same model. Same prompt. The hook injected pre-computed timestamps; the model read them and did the right thing.
+Same model. Same prompt. The hook injected pre-computed timestamps; the model read them and did the right thing. The same behavior change holds across Gemma 4, Mistral Small 3, DeepSeek-R1, and all three Claude tiers.
 
 ---
 
@@ -26,7 +26,7 @@ AsOf is a per-turn hook plus a primer that tells the LLM how to read its output.
 
 The hook surfaces three categories of staleness:
 
-1. **In-context file staleness.** Files the agent Read earlier whose mtime has moved since (peer edits, user edits in another tool). Catch rate: categorical across tested Claude models (Opus 4.7, Sonnet 4.6).
+1. **In-context file staleness.** Files the agent Read earlier whose mtime has moved since (peer edits, user edits in another tool). Catch rate: categorical across tested models — Claude Opus 4.7 and Sonnet 4.6, and the OSS models when running through a harness that exposes file-Read events.
 2. **Dated content in user paste.** Stock quotes, earnings, log entries with embedded timestamps. Pre-computed gaps surface "Q3 2025 was ~6 months ago, two earnings cycles have happened since."
 3. **Pseudo-stable factual claims.** "Typical hotel cost," "current Python version," and similar domains where the model treats time-sensitive info as static fact.
 
@@ -41,11 +41,11 @@ pip install asoftime
 asof install
 ```
 
-Wires AsOf into your LLM harness via an adapter. Currently supported:
+Wires AsOf into your LLM harness via an adapter. Pass `--adapter <name>` explicitly, or let `asof install` auto-detect Claude Code if it sees `~/.claude/`. Currently supported adapters:
 
-- **Claude Code** (default — auto-detected at `~/.claude/`): patches `settings.json` idempotently. Restart Claude Code to activate.
-- **Antigravity (Gemini):** `asof install --adapter antigravity` (V2)
-- **Generic harness** (LangGraph, CrewAI, custom Anthropic/OpenAI/Google SDK pipelines): `asof install --adapter generic`, then import `asof_core` from your hooks.
+- **Generic harness** (LangGraph, CrewAI, custom Anthropic/OpenAI/Google SDK pipelines): `asof install --adapter generic`, then import `asof_core` from your hooks. Use this for any harness with a pre-prompt callback surface.
+- **Antigravity (Gemini-substrate IDE):** `asof install --adapter antigravity` (V2)
+- **Claude Code:** `asof install --adapter claude_code` (or just `asof install` — auto-detected). Patches `~/.claude/settings.json` idempotently; restart Claude Code to activate.
 
 ```bash
 asof check     # verify wiring
@@ -116,7 +116,7 @@ Tiered invalidation evidence:
 
 ## Empirical evidence
 
-Current evidence base: A/B tests on identical prompts across Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) — the reference adapter's test bed. The core hooks are model-agnostic; comparable evidence for Gemini and generic-adapter harnesses is on track for V2.
+Current evidence base: A/B tests on identical prompts across three Claude tiers (Opus 4.7, Sonnet 4.6, Haiku 4.5) and three local open-source models (Gemma 4 e4b, Mistral Small 3, DeepSeek-R1 32B) via Ollama. Categorical behavior change observed on multiple effect-types across both surfaces. See [tests/abtests/](tests/abtests/) for the full battery, runners, and per-model results.
 
 **Categorical behavior change observed** on:
 - In-context file content with externally-changed mtime (Tests 3 and 4)
