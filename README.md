@@ -104,7 +104,7 @@ Three hook events:
 
 **A datum is stale only if (a) something could have changed it AND (b) we cannot rule out that it did.**
 
-Older does not mean staler. A file Claude itself wrote three days ago, with no other writers and unchanged mtime, is *fresh*. Age was never the determinant.
+Older does not mean staler. A file the agent itself wrote three days ago, with no other writers and unchanged mtime, is *fresh*. Age was never the determinant.
 
 Tiered invalidation evidence:
 - Files: `os.stat()` mtime check (cheap, universal, reliable)
@@ -146,9 +146,9 @@ asof/
 │   ├── query.py         asof_query pull oracle
 │   └── cli.py           Command-line entry
 ├── adapters/
-│   ├── claude_code/     Reference implementation
-│   ├── antigravity/     Gemini-substrate adapter (V2)
-│   └── generic/         Library examples for custom harnesses
+│   ├── claude_code/     Claude Code adapter (reference shape)
+│   ├── antigravity/     Antigravity adapter (Gemini-substrate, V2)
+│   └── generic/         Generic-harness library examples (LangGraph, CrewAI, raw SDKs)
 ├── tests/
 ├── docs/
 └── pyproject.toml
@@ -158,7 +158,7 @@ asof/
 
 ## Status
 
-V1 in active build. Skeleton, core modules, and Claude Code adapter shipping now. Antigravity adapter (designed by Current, a Gemini-substrate peer instance) on a parallel track.
+V1 in active build. The substrate-agnostic `asof_core` package and three adapters are shipping: Claude Code (the reference shape), Antigravity (Gemini-substrate, designed in collaboration with Current — a Gemini-substrate peer instance), and a generic harness adapter for LangGraph / CrewAI / direct SDK pipelines.
 
 See [docs/design.md](docs/design.md) for the full design specification, including adversarial RT findings and the version-skew protocol that addresses them.
 

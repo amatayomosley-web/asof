@@ -1,19 +1,19 @@
 # AsOf — Full design specification
 
 **Status:** Active build. This document is the canonical design that adapters and core implementation track against.
-**Repo:** https://github.com/amatayomosley-web/asof (public, currently empty placeholder)
-**Date:** 2026-05-27
-**Audience:** anyone implementing or extending AsOf. Specifically: Current is the intended designer of the Antigravity adapter section.
+**Repo:** https://github.com/amatayomosley-web/asof (public)
+**Date:** 2026-05-27 (original design); see git history for ongoing changes
+**Audience:** anyone implementing or extending AsOf for an LLM harness. The Antigravity adapter section was designed in collaboration with Current, a Gemini-substrate peer instance.
 
 ---
 
 ## 1. What AsOf is
 
-A drop-in temporal-awareness skill for tool-using LLMs. Closes a specific systematic failure mode: models treating all in-context information as if captured "now," regardless of whether that information has decayed since capture.
+A drop-in temporal-awareness component for tool-using LLMs. Closes a specific systematic failure mode: models treating all in-context information as if captured "now," regardless of whether that information has decayed since capture.
 
-The skill is a per-turn hook plus a teaching prose layer. Hook does the computation in Python (so the model never does unreliable date arithmetic in chat). Prose teaches the model how to interpret hook output and when to query for more.
+The architecture is a per-turn hook plus a teaching primer. The hook does the computation in Python (so the model never does unreliable date arithmetic in chat). The primer teaches the model how to interpret hook output and when to query for more.
 
-Target substrates: Claude (Claude Code), Gemini (Antigravity), open-source / generic (custom harnesses using LangGraph, CrewAI, Anthropic SDK, OpenAI Assistants, etc.).
+Substrate-agnostic by design. Currently shipping adapters: Claude Code (reference shape), Antigravity (Gemini-substrate, V2), and a generic harness adapter for LangGraph, CrewAI, raw Anthropic / Google / OpenAI SDK pipelines, or any harness with a pre-prompt callback surface.
 
 ## 2. The problem it solves
 
