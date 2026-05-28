@@ -29,6 +29,8 @@ from typing import Optional
 # Cutoff format: "YYYY-MM" — first-of-month is used for arithmetic.
 TRAINING_CUTOFFS: dict[str, str] = {
     # Anthropic — Claude family
+    "claude-opus-4-8": "2026-01",        # released 2026-05-28; training cutoff Jan 2026 per platform.claude.com models doc
+    "claude-opus-4-8[1m]": "2026-01",
     "claude-opus-4-7": "2026-01",
     "claude-opus-4-7[1m]": "2026-01",
     "claude-sonnet-4-6": "2026-01",
