@@ -11,14 +11,16 @@ import json
 import shutil
 from pathlib import Path
 
-def main() -> int:
+def main(config_dir: Path | None = None) -> int:
     print("[AsOf Install] Starting installation of Antigravity adapter...")
-    
+
     # 1. Define paths
-    home_dir = Path.home()
-    gemini_config_dir = home_dir / ".gemini" / "config"
+    gemini_config_dir = config_dir or (Path.home() / ".gemini" / "config")
     hooks_file = gemini_config_dir / "hooks.json"
-    sidecars_dir = gemini_config_dir / "sidecars" / "asof"
+    # The orchestrator is a PreInvocation HOOK, not a sidecar. It must live in a
+    # hooks dir: under sidecars/ Antigravity's sidecar_manager expects a
+    # sidecar.json and logs a missing-config warning every 10s.
+    hook_dir = gemini_config_dir / "hooks" / "asof"
     plugins_dir = gemini_config_dir / "plugins" / "asof"
     
     script_dir = Path(__file__).resolve().parent
@@ -33,14 +35,23 @@ def main() -> int:
             return 1
 
     # 2. Create target directories
-    sidecars_dir.mkdir(parents=True, exist_ok=True)
+    hook_dir.mkdir(parents=True, exist_ok=True)
     plugins_dir.mkdir(parents=True, exist_ok=True)
 
-    # 3. Copy files to sidecar and plugin directory
-    orchestrator_target = sidecars_dir / "asof_antigravity_orchestrator.py"
+    # 3. Copy files to hook and plugin directories
+    orchestrator_target = hook_dir / "asof_antigravity_orchestrator.py"
     shutil.copy2(orchestrator_source, orchestrator_target)
     os.chmod(orchestrator_target, 0o755)
     print(f"[AsOf Install] Copied orchestrator script to {orchestrator_target}")
+
+    # Verify the orchestrator is in place BEFORE registering a hook that runs
+    # it. A PreInvocation hook pointing at a missing file is fatal in
+    # Antigravity — it aborts the whole model invocation and bricks the agent.
+    # Never patch hooks.json unless the target exists and is non-empty.
+    if not orchestrator_target.is_file() or orchestrator_target.stat().st_size == 0:
+        print(f"[AsOf Install] ERROR: orchestrator missing at {orchestrator_target}; "
+              "refusing to register a dangling hook.")
+        return 1
 
     skill_target = plugins_dir / "SKILL.md"
     shutil.copy2(skill_source, skill_target)

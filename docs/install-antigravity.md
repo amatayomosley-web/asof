@@ -12,9 +12,9 @@ python install.py
 
 This installer automatically:
 1. Detects or creates the config directories:
-   - `~/.gemini/config/sidecars/asof/`
+   - `~/.gemini/config/hooks/asof/`
    - `~/.gemini/config/plugins/asof/`
-2. Copies `asof_antigravity_orchestrator.py` to the sidecar folder.
+2. Copies `asof_antigravity_orchestrator.py` to the hook folder.
 3. Copies `SKILL.md` to the plugins folder.
 4. Updates `~/.gemini/config/hooks.json` idempotently to wire up the single `PreInvocation` hook.
 
@@ -28,10 +28,10 @@ If you prefer to configure the adapter manually, follow these steps:
 
 ### 1. Create target directories
 
-Create the folders for sidecar scripts and plugin teaching prose:
+Create the folders for hook scripts and plugin teaching prose:
 
 ```powershell
-mkdir -Force "$env:USERPROFILE\.gemini\config\sidecars\asof"
+mkdir -Force "$env:USERPROFILE\.gemini\config\hooks\asof"
 mkdir -Force "$env:USERPROFILE\.gemini\config\plugins\asof"
 ```
 
@@ -40,13 +40,13 @@ mkdir -Force "$env:USERPROFILE\.gemini\config\plugins\asof"
 Copy the orchestrator script and the model instruction file (`SKILL.md`):
 
 ```powershell
-Copy-Item -Path "adapters\antigravity\asof_antigravity_orchestrator.py" -Destination "$env:USERPROFILE\.gemini\config\sidecars\asof\asof_antigravity_orchestrator.py"
+Copy-Item -Path "adapters\antigravity\asof_antigravity_orchestrator.py" -Destination "$env:USERPROFILE\.gemini\config\hooks\asof\asof_antigravity_orchestrator.py"
 Copy-Item -Path "adapters\antigravity\SKILL.md" -Destination "$env:USERPROFILE\.gemini\config\plugins\asof\SKILL.md"
 ```
 
 Ensure the orchestrator has execution permissions (for Unix/macOS environments, though not strictly required on Windows):
 ```bash
-chmod +x ~/.gemini/config/sidecars/asof/asof_antigravity_orchestrator.py
+chmod +x ~/.gemini/config/hooks/asof/asof_antigravity_orchestrator.py
 ```
 
 ### 3. Patch hooks.json
@@ -59,7 +59,7 @@ Create or open the hook configuration file at `~/.gemini/config/hooks.json` and 
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python ~/.gemini/config/sidecars/asof/asof_antigravity_orchestrator.py",
+        "command": "python ~/.gemini/config/hooks/asof/asof_antigravity_orchestrator.py",
         "timeout": 5
       }
     ]
@@ -67,7 +67,7 @@ Create or open the hook configuration file at `~/.gemini/config/hooks.json` and 
 }
 ```
 
-Ensure that backslashes in paths are either avoided or written with forward slashes (e.g. `C:/Users/.../.gemini/config/sidecars/asof/...`) to prevent escaping errors.
+Ensure that backslashes in paths are either avoided or written with forward slashes (e.g. `C:/Users/.../.gemini/config/hooks/asof/...`) to prevent escaping errors.
 
 ---
 

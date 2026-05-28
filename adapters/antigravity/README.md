@@ -14,8 +14,8 @@ python install.py
 
 The installer will:
 1. Verify the current environment.
-2. Create directories at `~/.gemini/config/sidecars/asof/` and `~/.gemini/config/plugins/asof/`.
-3. Copy `asof_antigravity_orchestrator.py` to the sidecar folder.
+2. Create directories at `~/.gemini/config/hooks/asof/` and `~/.gemini/config/plugins/asof/`.
+3. Copy `asof_antigravity_orchestrator.py` to the hook folder.
 4. Copy `SKILL.md` to the plugins folder.
 5. Idempotently update/patch `~/.gemini/config/hooks.json` to register the `PreInvocation` orchestrator hook.
 
@@ -49,7 +49,7 @@ Because Antigravity executes in a multi-step loop, running the hook on every too
 
 To uninstall the adapter:
 1. Open `~/.gemini/config/hooks.json` and remove the `PreInvocation` entry pointing to `asof_antigravity_orchestrator.py`.
-2. Delete the folders `~/.gemini/config/sidecars/asof/` and `~/.gemini/config/plugins/asof/`.
+2. Delete the folders `~/.gemini/config/hooks/asof/` and `~/.gemini/config/plugins/asof/`.
 
 ## Troubleshooting
 
