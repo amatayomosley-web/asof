@@ -1,0 +1,11 @@
+{
+  "current": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python {{ORCHESTRATOR_PATH}}",
+        "timeout": 5
+      }
+    ]
+  }
+}
