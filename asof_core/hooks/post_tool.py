@@ -43,11 +43,30 @@ _VOLATILITY: dict[str, str] = {
 
 
 _FILE_TOOLS = frozenset({"Read", "Edit", "Write", "MultiEdit", "NotebookEdit"})
+_URL_TOOLS = frozenset({"WebFetch", "WebSearch"})
 
 
 def classify_tool(tool_name: str) -> str:
     """Return the volatility class for a tool name."""
     return _VOLATILITY.get(tool_name, "static")
+
+
+def _url_capture_enabled() -> bool:
+    """Check config + env for whether URL freshness capture is enabled.
+    Off by default — network cost discipline."""
+    import os
+    if os.environ.get("ASOF_URL_CAPTURE", "").lower() in ("on", "true", "1"):
+        return True
+    try:
+        config_path = Path.home() / ".asof" / "config.json"
+        if config_path.is_file():
+            with config_path.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            if cfg.get("patterns", {}).get("url_check") is True:
+                return True
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    return False
 
 
 def _summarize_input(tool_name: str, tool_input: dict) -> str:
@@ -114,6 +133,24 @@ def post_tool(
                     record["mtime_at_read"] = stat["mtime_epoch"]
                     record["mtime_iso"] = stat["mtime_iso"]
                     record["size_bytes"] = stat["size_bytes"]
+
+        # For URL fetches, optionally capture ETag/Last-Modified via HEAD
+        # (only fires when config opts in — network cost discipline)
+        if tool_name in _URL_TOOLS:
+            url = tool_input.get("url") if isinstance(tool_input, dict) else None
+            if url and _url_capture_enabled():
+                try:
+                    from asof_core.url_freshness import head_request
+                    h = head_request(url, timeout=2.0)
+                    if h["ok"]:
+                        if h["etag"]:
+                            record["etag_at_fetch"] = h["etag"]
+                        if h["last_modified"]:
+                            record["last_modified_at_fetch"] = h["last_modified"]
+                        if h["cache_control"]:
+                            record["cache_control_at_fetch"] = h["cache_control"]
+                except Exception:
+                    pass
 
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

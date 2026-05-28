@@ -25,6 +25,7 @@ from asof_core.stat import (
 from asof_core.timestamps import find_timestamps
 from asof_core.patterns import PatternMatcher
 from asof_core.output import render_watch_block
+from asof_core.watchlist import evaluate_watchlist
 
 
 def _load_tool_log(log_path: Path) -> list[dict]:
@@ -178,12 +179,15 @@ def watch(
     )
     pattern_matches = matcher.match_all(prompt_text) if prompt_text else []
 
+    # Watchlist evaluation — only changed entries surface
+    watchlist_state = evaluate_watchlist(session_id=session_id)
+
     return render_watch_block(
         current_dt=now,
         stale_files=stale_files,
         mentioned_paths=mentioned,
         timestamps=timestamps,
-        watchlist_state=None,  # watchlist deferred to V2
+        watchlist_state=watchlist_state,
         pattern_matches=pattern_matches,
         mode=mode,
     )

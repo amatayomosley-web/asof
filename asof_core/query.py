@@ -141,18 +141,40 @@ def _query_file(path: str, session_log: Optional[list[dict]]) -> dict:
     }
 
 
-def _query_url(url: str) -> dict:
-    """URL freshness check — opt-in HEAD request.
+def _query_url(url: str, session_log: Optional[list[dict]] = None) -> dict:
+    """URL freshness check via HEAD request.
 
-    V1 implementation: returns "unknown" with a recommendation to fetch.
-    HEAD-request implementation is V2 (requires opt-in for network calls).
+    Compares current ETag/Last-Modified to values captured at the
+    original WebFetch (recorded by post_tool when ASOF_URL_CAPTURE is on
+    or config opts in).
     """
+    from asof_core.url_freshness import classify_url_freshness
+
+    # Find captured ETag/Last-Modified in session log
+    etag_at_fetch: Optional[str] = None
+    last_modified_at_fetch: Optional[str] = None
+    if session_log:
+        for r in session_log:
+            if r.get("input_summary") == url and r.get("tool_name") in ("WebFetch", "WebSearch"):
+                etag_at_fetch = r.get("etag_at_fetch") or etag_at_fetch
+                last_modified_at_fetch = r.get("last_modified_at_fetch") or last_modified_at_fetch
+
+    result = classify_url_freshness(
+        url,
+        etag_at_fetch=etag_at_fetch,
+        last_modified_at_fetch=last_modified_at_fetch,
+    )
     return {
         "kind": "url",
         "target": url,
-        "verdict": "unknown",
-        "reason": "URL freshness check requires opt-in HEAD request (not implemented in V1)",
-        "detail": {"recommendation": "WebFetch the URL to get current state"},
+        "verdict": result["verdict"],
+        "reason": result["reason"],
+        "detail": {
+            "current_etag": result["current_etag"],
+            "current_last_modified": result["current_last_modified"],
+            "etag_at_fetch": etag_at_fetch,
+            "last_modified_at_fetch": last_modified_at_fetch,
+        },
     }
 
 

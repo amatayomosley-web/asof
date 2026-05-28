@@ -205,6 +205,10 @@ def render_watch_block(
         pattern_matches: pattern matcher results
         mode: "silent" | "normal" | "strict" — controls section verbosity
     """
+    # Silent mode: suppress all per-turn output unconditionally
+    if mode == "silent":
+        return ""
+
     sections: list[list[str]] = []
     if stale_files:
         sections.append(_format_file_freshness(stale_files))
@@ -214,7 +218,7 @@ def render_watch_block(
         sections.append(_format_timestamps(timestamps))
     if watchlist_state:
         sections.append(_format_watchlist(watchlist_state))
-    if pattern_matches and mode != "silent":
+    if pattern_matches:
         sections.append(_format_pattern_alerts(pattern_matches))
 
     # Adaptive rendering: empty output if nothing actionable
