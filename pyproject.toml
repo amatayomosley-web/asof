@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { name = "William" },
+    { name = "Maximillian Mosley" },
 ]
 keywords = ["llm", "claude", "gemini", "temporal", "staleness", "rag", "ai-tools"]
 classifiers = [
