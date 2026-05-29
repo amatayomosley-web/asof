@@ -1,0 +1,10 @@
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "To deploy using the DEPLOY_TOKEN from deploy_config.txt, use:\n\n```bash\ndeploy --token REL-7741\n```", "seed": 1, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-9982-HOTFIX`", "seed": 1, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The final deploy command, using the updated DEPLOY_TOKEN from deploy_config.txt, is as follows:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 2, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The final deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 3, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 4, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "`deploy --token REL-9982-HOTFIX`", "seed": 4, "model": "deepseek-r1:32b"}
