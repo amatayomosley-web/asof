@@ -62,7 +62,12 @@ def _format_file_freshness(stale_files: list[dict]) -> list[str]:
     """
     if not stale_files:
         return []
-    lines = ["", "## File freshness (this session)"]
+    # Status + an explicit call to action: capable models infer "re-read" from
+    # the STALE status alone, but smaller models (verified: gemma-4-e4b) don't
+    # act on the terse line without the imperative.
+    lines = ["", "## File freshness (this session)",
+             "Re-read any file below before relying on its earlier contents — "
+             "it changed on disk since it was last read."]
     for f in stale_files:
         lines.append(f"  STALE  {f['path']:50s}  {f.get('reason', 'mtime moved after read')}")
         # Co-locate a copy of the datum with its warning (opt-in capture), so
