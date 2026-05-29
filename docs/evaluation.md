@@ -98,15 +98,20 @@ Two things, cleanly separated:
   re-reads aren't AsOf making models paranoid — they're caused by a real,
   correctly-detected change. The baseline failure is universal too: every model
   commits the stale value 10/10 without AsOf.
-- **The model's job — acting on the verdict — depends on the model.** Mistral
-  (10/10) and DeepSeek (9/10) re-read once warned; **Gemma-4-e4b (0/10) ignored
-  the warning entirely** — it emitted `deploy --token REL-7741` with the STALE
-  block sitting in its context. AsOf can put the signal in front of a model; a
-  4 B model may still not act on it.
+- **The model's job — acting on the verdict — depends on the model, and on the
+  verdict's *wording*.** Mistral (10/10) and DeepSeek (9/10) re-read once warned.
+  **Gemma-4-e4b scored 0/10 — but a follow-up probe shows the cause is AsOf's
+  phrasing, not Gemma's capability.** Fed AsOf's terse line (`STALE … size
+  changed 21→28 bytes after read`), Gemma shipped the stale token regardless of
+  message role (system vs merged-into-user) or think-mode. Fed a plain
+  imperative — "that file may have been edited since you read it; re-read it" —
+  the *same* model re-read correctly (`READ_FILE: deploy_config.txt`). A 4 B
+  model doesn't parse AsOf's compact, technical verdict as a call to action.
 
 The honest one-liner: **AsOf detects and surfaces real file-staleness reliably
-and without false positives across every model tested; whether that prevents
-the stale-data error then depends on the model's capacity to act on it.**
+and without false positives across every model tested. Capable models act on
+the terse verdict; a 4 B model needs the staleness phrased as a plain imperative
+— a fixable AsOf-wording gap, not a model-capability ceiling.**
 
 ## Where it's weak (honestly)
 
