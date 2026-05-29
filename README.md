@@ -4,6 +4,19 @@
 
 ---
 
+## Quickstart (2 commands)
+
+```bash
+pip install asoftime
+asof install          # auto-detects Claude Code; restart it afterward
+```
+
+**Done.** Your model now gets a heads-up when its context may be stale — files that changed since it read them, dated info in your prompts, and how old its own training knowledge is.
+
+Verify with `asof check`. Nothing else is required — everything below is optional, read it only when you want to tune something.
+
+---
+
 ## The hero example
 
 User pastes: *"Here's NVDA's latest earnings report I pulled: Q3 2025 Revenue $35.1B (announced November 2025), EPS $0.81, data center segment grew 94% YoY. I'm trying to project their next earnings. What should I expect?"*
