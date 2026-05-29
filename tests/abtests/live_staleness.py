@@ -103,11 +103,17 @@ def run_cell(
     #     ON; A is the bare baseline. For control the file is unchanged, so a
     #     correct detector returns nothing and asof_block stays empty. ---
     asof_block = ""
-    if condition in ("B", "control"):
+    if condition in ("B", "control", "implied"):
         records = _load_tool_log(log_dir / f"{session_id}.jsonl")
         stale = _evaluate_working_set(records)
         if stale:
             asof_block = render_watch_block(current_dt=now, stale_files=stale)
+            if condition == "implied":
+                # Strip the re-read imperative -> the pre-fix "status only"
+                # verdict, for the reg/implied/directive framing comparison.
+                asof_block = "\n".join(
+                    ln for ln in asof_block.splitlines()
+                    if not ln.startswith("Re-read any file below"))
 
     messages: Messages = [
         {"role": "system", "content": _system_prompt()},
@@ -180,6 +186,19 @@ OSS_MODELS = [
 ]
 CONDITIONS = ("A", "B", "control")
 
+# Smaller models for the framing comparison (size ladder, official tags).
+SMALLER_MODELS = [
+    {"tag": "gemma2:2b",   "opts": dict(think=False, temperature=0.7, num_ctx=8192, num_predict=1024)},
+    {"tag": "qwen2.5:7b",  "opts": dict(think=False, temperature=0.7, num_ctx=8192, num_predict=1024)},
+    {"tag": "llama3.1:8b", "opts": dict(think=False, temperature=0.7, num_ctx=8192, num_predict=1024)},
+    {"tag": "gemma2:9b",   "opts": dict(think=False, temperature=0.7, num_ctx=8192, num_predict=1024)},
+    {"tag": "qwen2.5:14b", "opts": dict(think=False, temperature=0.7, num_ctx=8192, num_predict=1024)},
+]
+# Verdict framings: reg = no verdict (baseline); implied = terse status-only
+# verdict; directive = status + re-read imperative (current default).
+# Each is (label, run_cell condition).
+FRAMINGS = [("reg", "A"), ("implied", "implied"), ("directive", "B")]
+
 
 def _free_loaded_models() -> None:
     """Unload whatever Ollama has in VRAM — only one of these models fits on a
@@ -198,48 +217,62 @@ def _free_loaded_models() -> None:
 
 def main() -> int:
     import tempfile
-    ap = argparse.ArgumentParser(description="AsOf live file-staleness test (3 OSS models)")
+    ap = argparse.ArgumentParser(description="AsOf live file-staleness test")
+    ap.add_argument("--mode", choices=["ab", "framing"], default="ab",
+                    help="ab: A/B/control on the OSS set; framing: reg/implied/directive on smaller models")
     ap.add_argument("--seeds", type=int, default=10)
-    ap.add_argument("--out", default="tests/abtests/results/live-staleness-oss.jsonl")
+    ap.add_argument("--out", default=None)
     args = ap.parse_args()
+
+    if args.mode == "framing":
+        models, cells = SMALLER_MODELS, FRAMINGS
+        out_path = args.out or "tests/abtests/results/live-staleness-framing.jsonl"
+    else:
+        models, cells = OSS_MODELS, [(c, c) for c in CONDITIONS]
+        out_path = args.out or "tests/abtests/results/live-staleness-oss.jsonl"
 
     base = Path(tempfile.mkdtemp(prefix="asof_live_"))
     rows: list[dict] = []
-    for m in OSS_MODELS:
+    for m in models:
         _free_loaded_models()  # one model in VRAM at a time
         print(f"\n##### {m['tag']} #####")
         model_fn = ollama_model_fn(m["tag"], **m["opts"])
         for seed in range(args.seeds):
-            for cond in CONDITIONS:
+            for label, cond in cells:
                 safe = m["tag"].replace(":", "_").replace("/", "_")
-                ws = base / f"{safe}_s{seed}_{cond}"
-                sid = f"live-{safe}-{seed}-{cond}"
+                ws = base / f"{safe}_s{seed}_{label}"
+                sid = f"live-{safe}-{seed}-{label}"
                 try:
                     out = run_cell(model_fn, cond, workspace=ws, session_id=sid)
                 except Exception as e:
                     out = {"condition": cond, "asof_fired": None, "reread": None,
                            "verdict": "error", "final": str(e)[:300]}
-                out.update({"seed": seed, "model": m["tag"]})
+                out.update({"seed": seed, "model": m["tag"], "framing": label})
                 rows.append(out)
-                print(f"  s{seed} {cond}: {out['verdict']} "
+                print(f"  s{seed} {label}: {out['verdict']} "
                       f"(reread={out['reread']}, fired={out['asof_fired']})")
         # Write incrementally so a long multi-model run isn't lost on a crash.
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(out_path).write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
     _free_loaded_models()
 
     print("\n================ SUMMARY ================")
-    for m in OSS_MODELS:
+    for m in models:
         mr = [r for r in rows if r["model"] == m["tag"]]
-
-        def rate(cond: str, pred) -> str:
-            cells = [r for r in mr if r["condition"] == cond]
-            return f"{sum(1 for r in cells if pred(r))}/{len(cells)}"
-
-        print(f"  {m['tag']:22s}  A fresh {rate('A', lambda r: r['verdict']=='fresh')}"
-              f"   B fresh {rate('B', lambda r: r['verdict']=='fresh')}"
-              f"   control clean {rate('control', lambda r: r['verdict']=='clean')}")
-    print(f"\nwrote {args.out}")
+        if args.mode == "framing":
+            def fresh(label):
+                c = [r for r in mr if r.get("framing") == label]
+                return f"{sum(1 for r in c if r['verdict']=='fresh')}/{len(c)}"
+            print(f"  {m['tag']:16s}  reg {fresh('reg')}   implied {fresh('implied')}"
+                  f"   directive {fresh('directive')}")
+        else:
+            def rate(cond, pred):
+                c = [r for r in mr if r["condition"] == cond]
+                return f"{sum(1 for r in c if pred(r))}/{len(c)}"
+            print(f"  {m['tag']:22s}  A fresh {rate('A', lambda r: r['verdict']=='fresh')}"
+                  f"   B fresh {rate('B', lambda r: r['verdict']=='fresh')}"
+                  f"   control clean {rate('control', lambda r: r['verdict']=='clean')}")
+    print(f"\nwrote {out_path}")
     return 0
 
 

@@ -49,6 +49,27 @@ def test_heeding_model_only_goes_fresh_under_asof(tmp_path):
     assert a["reread"] is False and a["verdict"] == "stale"
 
 
+def _imperative_only_mock(messages):
+    # Re-reads only when the *imperative* line is present (directive framing),
+    # not on the terse status line (implied framing).
+    text = " ".join(m["content"] for m in messages)
+    if "Current contents of" in text:
+        return f"deploy --token {live.NEW_TOKEN}"
+    if "Re-read any file below" in text:
+        return f"READ_FILE: {live.CONFIG_NAME}"
+    return f"deploy --token {live.OLD_TOKEN}"
+
+
+def test_implied_strips_imperative_directive_keeps_it(tmp_path):
+    imp = live.run_cell(_imperative_only_mock, "implied", workspace=tmp_path / "i", session_id="t-i")
+    drv = live.run_cell(_imperative_only_mock, "B", workspace=tmp_path / "d", session_id="t-d")
+    # implied: AsOf still detects (block fires) but the imperative is stripped,
+    # so the imperative-keyed mock does NOT re-read -> stale.
+    assert imp["asof_fired"] is True and imp["verdict"] == "stale"
+    # directive (B): imperative present -> mock re-reads -> fresh.
+    assert drv["reread"] is True and drv["verdict"] == "fresh"
+
+
 def test_control_no_false_fire(tmp_path):
     # Control: AsOf is ON but the file never changes -> it must stay silent.
     out = live.run_cell(_heed_mock, "control", workspace=tmp_path / "c", session_id="t-c")
