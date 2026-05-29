@@ -71,6 +71,43 @@ Judge-scored flag-rate per (model, category). ★ = categorical (≥ 80%).
   since Q3 2025" needs gap-math *applied to* domain reasoning; bigger models do
   it better (Opus 83%). AsOf surfaces the gap; the model still has to use it.
 
+## Live test: does detection actually fire, and do models act on it?
+
+The A/B numbers above hand-fed AsOf's verdict as text, so they can't speak to
+whether AsOf *detects* and *surfaces* staleness in a real loop. A second
+experiment closes that for the file-staleness mechanism. Each cell: the model
+reads a config file (recorded by the real `post_tool` hook), an external process
+changes the value, then the model is asked to use it again and may re-read.
+Condition **B** runs AsOf's *actual* detector + renderer over the recorded read
+and the changed file; **A** is bare; **control** is AsOf-on but the file is
+*unchanged*. Scoring is judge-free — the token changes length
+(`REL-7741` → `REL-9982-HOTFIX`), so we just read off whether the model commits
+the stale token or the fresh one. 3 local models × 3 conditions × 10 seeds.
+
+| Model | A (no AsOf) | B (AsOf) | control |
+|---|---|---|---|
+| mistral-small | 0/10 fresh | **10/10 fresh** | 10/10 clean |
+| deepseek-r1:32b | 0/10 fresh | **9/10 fresh** | 10/10 clean |
+| gemma4-e4b | 0/10 fresh | **0/10 fresh** | 10/10 clean |
+
+Two things, cleanly separated:
+
+- **AsOf's job — detection + surfacing — is model-independent and clean.** It
+  fired on every B cell (30/30), never on A or control (0/60), and control is
+  10/10 clean for all three: it stays *silent* on an unchanged file. So B's
+  re-reads aren't AsOf making models paranoid — they're caused by a real,
+  correctly-detected change. The baseline failure is universal too: every model
+  commits the stale value 10/10 without AsOf.
+- **The model's job — acting on the verdict — depends on the model.** Mistral
+  (10/10) and DeepSeek (9/10) re-read once warned; **Gemma-4-e4b (0/10) ignored
+  the warning entirely** — it emitted `deploy --token REL-7741` with the STALE
+  block sitting in its context. AsOf can put the signal in front of a model; a
+  4 B model may still not act on it.
+
+The honest one-liner: **AsOf detects and surfaces real file-staleness reliably
+and without false positives across every model tested; whether that prevents
+the stale-data error then depends on the model's capacity to act on it.**
+
 ## Where it's weak (honestly)
 
 - **N=3 seeds/cell** — read these as direction-of-effect, not precise magnitude.
@@ -80,6 +117,11 @@ Judge-scored flag-rate per (model, category). ★ = categorical (≥ 80%).
   similar inputs, not universal coverage.
 - **Single date snapshot** (2026-05-28) — categorical effects should hold; exact
   gap arithmetic is date-specific.
+- **The live test's own limits** — it covers one file-staleness scenario at N=10
+  and hands the model an explicit re-read affordance, so it shows "a surfaced,
+  correctly-detected verdict triggers a re-read when the model can and will,"
+  not universal coverage. It does, however, retire the synthetic battery's
+  biggest caveat (hand-fed verdict) for this mechanism.
 
 Full falsification criteria are in [`findings.md`](../tests/abtests/findings.md#falsification-path).
 
@@ -90,4 +132,5 @@ pip install -e ".[dev]"
 python tests/abtests/runners/ollama_runner.py     # local OSS models via Ollama
 python tests/abtests/runners/claude_cli_runner.py  # Claude tiers via the CLI
 python tests/abtests/score_judge.py                # LLM-judge the A/B pairs
+python tests/abtests/live_staleness.py --seeds 10  # live file-staleness, 3 OSS models
 ```
