@@ -43,13 +43,31 @@ def _format_header(*, current_dt: datetime, force: bool = False) -> list[str]:
 
 
 def _format_cutoff_section(cutoff_gap: dict) -> list[str]:
-    """Training-cutoff awareness section. Only emit at session-init or
-    when explicitly triggered."""
+    """Training-cutoff awareness section. Emitted at session-init.
+
+    Two shapes. Known: the pre-computed gap. Unknown: a conservative posture
+    that names the model and the exact ~/.asof/config.json the operator edits
+    to pin an accurate cutoff — so AsOf still anchors temporal awareness and
+    the fix is one paste away.
+    """
+    cutoff_str = cutoff_gap.get("cutoff_str")
+    if cutoff_str:
+        return [
+            "",
+            "## Training cutoff",
+            f"  Cutoff: {cutoff_str} ({cutoff_gap.get('human') or 'gap unknown'})",
+            "  Hedge factual claims about state newer than the cutoff.",
+        ]
+    mid = cutoff_gap.get("model_id")
+    who = f" for '{mid}'" if mid else ""
+    key = mid or "<model-id>"
     return [
         "",
         "## Training cutoff",
-        f"  Cutoff: {cutoff_gap.get('cutoff_str', 'unknown')} ({cutoff_gap.get('human', 'unknown gap')})",
-        "  Hedge factual claims about state newer than the cutoff.",
+        f"  Cutoff: unknown{who} — treat any time-sensitive factual claim as "
+        "potentially stale.",
+        "  For accuracy, pin this model's cutoff in ~/.asof/config.json:",
+        f'    {{"cutoffs": {{"{key}": "YYYY-MM"}}}}',
     ]
 
 

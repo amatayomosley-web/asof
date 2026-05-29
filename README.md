@@ -90,6 +90,28 @@ Or env vars: `ASOF_DOMAINS=finance,stocks,travel`, `ASOF_MODE=strict`, `ASOF_FIL
 
 Off by default. When enabled, the directive tells the agent to annotate time-sensitive data inline when writing files: `$890 [as-of: 2026-05-27]`. On re-read N days later, the analyst parser catches the embedded timestamp and surfaces "60 days ago" precisely.
 
+### Training cutoff (always emitted)
+
+AsOf **always** emits a training-cutoff posture at session start, so the model always knows how stale its own knowledge is. The cutoff is resolved in order:
+
+1. `ASOF_TRAINING_CUTOFF` env var — global override for the session
+2. a per-model `cutoffs` map in `~/.asof/config.json` — operator-set, the recommended accuracy path
+3. the built-in registry (Claude, Gemini, GPT, Llama, Mistral, Gemma, DeepSeek)
+4. an anchored scan of the Ollama modelfile (`ollama show --modelfile`) — reads only an explicit *knowledge cutoff / cutting knowledge date / knowledge base last updated* line and ignores license, copyright, and release dates
+5. otherwise — a conservative *"cutoff unknown — treat time-sensitive claims as potentially stale"* posture that names the model and the config to set
+
+AsOf never asks the model its own cutoff (models are unreliable at self-report). **For a model AsOf doesn't recognize, set its cutoff yourself so the gap is accurate** — either edit `~/.asof/config.json`:
+
+```json
+{ "cutoffs": { "my-local-model:latest": "2024-06" } }
+```
+
+or use the CLI:
+
+```bash
+asof config set-cutoff "my-local-model:latest=2024-06"
+```
+
 ---
 
 ## How it works

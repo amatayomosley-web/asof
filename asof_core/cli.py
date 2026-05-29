@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -154,6 +155,22 @@ def cmd_config(args: argparse.Namespace) -> int:
             print(f"Domain not currently active: {args.value}")
         return 0
 
+    if args.action == "set-cutoff":
+        if not args.value or "=" not in args.value:
+            print('Usage: asof config set-cutoff <model-id>=<YYYY-MM>')
+            print('  e.g. asof config set-cutoff "my-local-model:latest=2024-06"')
+            return 2
+        model_id, _, cutoff = args.value.partition("=")
+        model_id, cutoff = model_id.strip(), cutoff.strip()
+        if not re.match(r"^\d{4}-\d{2}(?:-\d{2})?$", cutoff):
+            print(f"Cutoff must be YYYY-MM or YYYY-MM-DD. Got: {cutoff!r}")
+            return 2
+        cutoffs = config.setdefault("cutoffs", {})
+        cutoffs[model_id] = cutoff
+        _save_config(config)
+        print(f"Set cutoff for {model_id} = {cutoff}")
+        return 0
+
     if args.action == "set":
         if not args.value:
             print("Usage: asof config set <key>=<value>")
@@ -212,7 +229,7 @@ def main() -> int:
     p_check.set_defaults(func=cmd_check)
 
     p_config = subparsers.add_parser("config", help="view or modify config")
-    p_config.add_argument("action", nargs="?", choices=["show", "add-domain", "remove-domain", "set"])
+    p_config.add_argument("action", nargs="?", choices=["show", "add-domain", "remove-domain", "set", "set-cutoff"])
     p_config.add_argument("value", nargs="?")
     p_config.set_defaults(func=cmd_config)
 

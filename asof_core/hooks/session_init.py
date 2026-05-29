@@ -13,7 +13,7 @@ from typing import Optional
 import json
 import os
 
-from asof_core.cutoffs import lookup_cutoff, gap_to_now
+from asof_core.cutoffs import build_cutoff_posture
 from asof_core.output import render_session_init
 
 
@@ -68,18 +68,13 @@ def session_init(
         log_dir = Path.home() / ".asof" / "tool_log"
     _ensure_tool_log_dir(log_dir)
 
-    # Look up training cutoff (None for unknown models)
-    cutoff_gap: dict = {}
-    if model_id:
-        cutoff = lookup_cutoff(model_id)
-        if cutoff and cutoff != "UNKNOWN-PENDING":
-            gap = gap_to_now(cutoff, now=now.date())
-            cutoff_gap = {
-                "cutoff_str": cutoff,
-                **gap,
-            }
+    # Resolve the training cutoff into a render-ready posture. This ALWAYS
+    # yields a posture — a precise gap when the cutoff is known, or a
+    # conservative "unknown" posture that routes the operator to the config
+    # map — so AsOf never silently drops its temporal-awareness anchor.
+    posture = build_cutoff_posture(model_id, now=now.date())
 
-    result = render_session_init(current_dt=now, cutoff_gap=cutoff_gap)
+    result = render_session_init(current_dt=now, cutoff_gap=posture)
 
     # Append file-annotation directive if enabled (opt-in via config or env)
     if _file_annotation_enabled():
