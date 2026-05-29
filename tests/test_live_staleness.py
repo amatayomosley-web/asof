@@ -47,3 +47,11 @@ def test_heeding_model_only_goes_fresh_under_asof(tmp_path):
     assert b["reread"] is True and b["verdict"] == "fresh"
     # Without it, the same model commits the stale token:
     assert a["reread"] is False and a["verdict"] == "stale"
+
+
+def test_control_no_false_fire(tmp_path):
+    # Control: AsOf is ON but the file never changes -> it must stay silent.
+    out = live.run_cell(_heed_mock, "control", workspace=tmp_path / "c", session_id="t-c")
+    assert out["asof_fired"] is False     # no false positive on an unchanged file
+    assert out["verdict"] == "clean"
+    assert out["reread"] is False         # and the heed-mock doesn't re-read with no STALE block

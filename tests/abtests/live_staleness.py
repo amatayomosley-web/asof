@@ -94,12 +94,16 @@ def run_cell(
     post_tool(session_id=session_id, tool_name="Read",
               tool_input={"file_path": str(cfg)}, log_dir=log_dir, now=now)
 
-    # --- Step 2: external mutation (someone edits the file) ---
-    cfg.write_text(f"DEPLOY_TOKEN={NEW_TOKEN}\n", encoding="utf-8")  # different length
+    # --- Step 2: external mutation (someone edits the file) — SKIPPED for the
+    #     control, which proves AsOf does not false-fire on an unchanged file ---
+    if condition != "control":
+        cfg.write_text(f"DEPLOY_TOKEN={NEW_TOKEN}\n", encoding="utf-8")  # different length
 
-    # --- Step 3: AsOf's REAL detection/render (condition B only) ---
+    # --- Step 3: AsOf's REAL detection/render. B and control both have AsOf
+    #     ON; A is the bare baseline. For control the file is unchanged, so a
+    #     correct detector returns nothing and asof_block stays empty. ---
     asof_block = ""
-    if condition == "B":
+    if condition in ("B", "control"):
         records = _load_tool_log(log_dir / f"{session_id}.jsonl")
         stale = _evaluate_working_set(records)
         if stale:
@@ -121,37 +125,42 @@ def run_cell(
         })
         resp = model_fn(messages)
 
-    used_new = NEW_TOKEN in resp or "9982" in resp
-    used_old = (OLD_TOKEN in resp or "7741" in resp) and not used_new
-    if reread or used_new:
-        verdict = "fresh"
-    elif used_old:
-        verdict = "stale"          # the failure AsOf exists to prevent
+    if condition == "control":
+        # File never changed: AsOf must stay silent (no false positive).
+        verdict = "false_fire" if asof_block else "clean"
     else:
-        verdict = "ambiguous"      # didn't commit a token (soft non-failure)
+        used_new = NEW_TOKEN in resp or "9982" in resp
+        used_old = (OLD_TOKEN in resp or "7741" in resp) and not used_new
+        if reread or used_new:
+            verdict = "fresh"
+        elif used_old:
+            verdict = "stale"          # the failure AsOf exists to prevent
+        else:
+            verdict = "ambiguous"      # didn't commit a token (soft non-failure)
     return {
         "condition": condition,
         "asof_fired": bool(asof_block),
         "reread": reread,
         "verdict": verdict,
-        "final": resp[:500],
+        "final": resp[:800],
     }
 
 
 def ollama_model_fn(model: str = "deepseek-r1:32b", *, think: bool = True,
                     num_ctx: int = 4096, num_predict: int = 4096,
-                    temperature: float = 0.6, url: str = "http://localhost:11434") -> ModelFn:
+                    temperature: float = 0.6, extra_options: dict | None = None,
+                    url: str = "http://localhost:11434") -> ModelFn:
     # num_ctx 4096: the prompts here are small, and findings.md notes
     # deepseek-r1:32b needs this ceiling on a 24 GB GPU to avoid OOM.
     """Build a model_fn that calls Ollama's /api/chat (DeepSeek-R1 by default)."""
     import requests
 
     def _fn(messages: Messages) -> str:
-        payload = {
-            "model": model, "messages": messages, "stream": False, "think": think,
-            "options": {"temperature": temperature, "num_ctx": num_ctx,
-                        "num_predict": num_predict},
-        }
+        opts = {"temperature": temperature, "num_ctx": num_ctx, "num_predict": num_predict}
+        if extra_options:
+            opts.update(extra_options)
+        payload = {"model": model, "messages": messages, "stream": False,
+                   "think": think, "options": opts}
         r = requests.post(f"{url}/api/chat", json=payload, timeout=3600)
         r.raise_for_status()
         return (r.json().get("message", {}) or {}).get("content", "") or ""
@@ -159,35 +168,78 @@ def ollama_model_fn(model: str = "deepseek-r1:32b", *, think: bool = True,
     return _fn
 
 
+# The three local OSS models, with the sampling each was run at in findings.md.
+OSS_MODELS = [
+    {"tag": "deepseek-r1:32b",
+     "opts": dict(think=True, temperature=0.6, num_ctx=4096, num_predict=4096)},
+    {"tag": "gemma4:e4b",
+     "opts": dict(think=True, temperature=1.0, num_ctx=8192, num_predict=2048,
+                  extra_options={"top_p": 0.95, "top_k": 64})},
+    {"tag": "mistral-small:latest",
+     "opts": dict(think=False, temperature=0.15, num_ctx=8192, num_predict=2048)},
+]
+CONDITIONS = ("A", "B", "control")
+
+
+def _free_loaded_models() -> None:
+    """Unload whatever Ollama has in VRAM — only one of these models fits on a
+    24 GB box at a time, so we run them strictly sequentially."""
+    import subprocess
+    try:
+        out = subprocess.run(["ollama", "ps"], capture_output=True, text=True,
+                             timeout=30).stdout
+        for line in out.splitlines()[1:]:  # skip header
+            parts = line.split()
+            if parts:
+                subprocess.run(["ollama", "stop", parts[0]], capture_output=True, timeout=120)
+    except Exception:
+        pass
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="AsOf live file-staleness test")
-    ap.add_argument("--model", default="deepseek-r1:32b")
-    ap.add_argument("--seeds", type=int, default=5)
-    ap.add_argument("--out", default=None)
+    import tempfile
+    ap = argparse.ArgumentParser(description="AsOf live file-staleness test (3 OSS models)")
+    ap.add_argument("--seeds", type=int, default=10)
+    ap.add_argument("--out", default="tests/abtests/results/live-staleness-oss.jsonl")
     args = ap.parse_args()
 
-    import tempfile
-    model_fn = ollama_model_fn(args.model)
-    rows: list[dict] = []
     base = Path(tempfile.mkdtemp(prefix="asof_live_"))
-    for seed in range(args.seeds):
-        for cond in ("A", "B"):
-            ws = base / f"s{seed}_{cond}"
-            sid = f"live-{seed}-{cond}"
-            out = run_cell(model_fn, cond, workspace=ws, session_id=sid)
-            out.update({"seed": seed, "model": args.model})
-            rows.append(out)
-            print(f"  seed{seed} {cond}: verdict={out['verdict']} reread={out['reread']} "
-                  f"asof_fired={out['asof_fired']}")
-
-    def rate(cond: str) -> str:
-        cells = [r for r in rows if r["condition"] == cond]
-        fresh = sum(1 for r in cells if r["verdict"] == "fresh")
-        return f"{fresh}/{len(cells)} fresh"
-    print(f"\nA (no AsOf): {rate('A')}    B (AsOf): {rate('B')}")
-    if args.out:
+    rows: list[dict] = []
+    for m in OSS_MODELS:
+        _free_loaded_models()  # one model in VRAM at a time
+        print(f"\n##### {m['tag']} #####")
+        model_fn = ollama_model_fn(m["tag"], **m["opts"])
+        for seed in range(args.seeds):
+            for cond in CONDITIONS:
+                safe = m["tag"].replace(":", "_").replace("/", "_")
+                ws = base / f"{safe}_s{seed}_{cond}"
+                sid = f"live-{safe}-{seed}-{cond}"
+                try:
+                    out = run_cell(model_fn, cond, workspace=ws, session_id=sid)
+                except Exception as e:
+                    out = {"condition": cond, "asof_fired": None, "reread": None,
+                           "verdict": "error", "final": str(e)[:300]}
+                out.update({"seed": seed, "model": m["tag"]})
+                rows.append(out)
+                print(f"  s{seed} {cond}: {out['verdict']} "
+                      f"(reread={out['reread']}, fired={out['asof_fired']})")
+        # Write incrementally so a long multi-model run isn't lost on a crash.
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
-        print(f"wrote {args.out}")
+    _free_loaded_models()
+
+    print("\n================ SUMMARY ================")
+    for m in OSS_MODELS:
+        mr = [r for r in rows if r["model"] == m["tag"]]
+
+        def rate(cond: str, pred) -> str:
+            cells = [r for r in mr if r["condition"] == cond]
+            return f"{sum(1 for r in cells if pred(r))}/{len(cells)}"
+
+        print(f"  {m['tag']:22s}  A fresh {rate('A', lambda r: r['verdict']=='fresh')}"
+              f"   B fresh {rate('B', lambda r: r['verdict']=='fresh')}"
+              f"   control clean {rate('control', lambda r: r['verdict']=='clean')}")
+    print(f"\nwrote {args.out}")
     return 0
 
 
