@@ -84,11 +84,11 @@ and the changed file; **A** is bare; **control** is AsOf-on but the file is
 (`REL-7741` → `REL-9982-HOTFIX`), so we just read off whether the model commits
 the stale token or the fresh one. 3 local models × 3 conditions × 10 seeds.
 
-| Model | A (no AsOf) | B (AsOf) | control |
-|---|---|---|---|
-| mistral-small | 0/10 fresh | **10/10 fresh** | 10/10 clean |
-| deepseek-r1:32b | 0/10 fresh | **9/10 fresh** | 10/10 clean |
-| gemma4-e4b | 0/10 fresh | **0/10 fresh** | 10/10 clean |
+| Model | A (no AsOf) | B — terse verdict | B — + re-read imperative | control |
+|---|---|---|---|---|
+| mistral-small | 0/10 fresh | 10/10 fresh | 10/10 fresh | 10/10 clean |
+| deepseek-r1:32b | 0/10 fresh | 9/10 fresh | **10/10 fresh** | 10/10 clean |
+| gemma4-e4b | 0/10 fresh | **0/10 fresh** | **9/10 fresh** | 10/10 clean |
 
 Two things, cleanly separated:
 
@@ -107,11 +107,16 @@ Two things, cleanly separated:
   imperative — "that file may have been edited since you read it; re-read it" —
   the *same* model re-read correctly (`READ_FILE: deploy_config.txt`). A 4 B
   model doesn't parse AsOf's compact, technical verdict as a call to action.
+  **So we added a one-line re-read imperative to the verdict and re-ran:
+  Gemma went 0/10 → 9/10 (it now re-reads), DeepSeek 9/10 → 10/10, Mistral
+  held 10/10.** The fix is purely additive — capable models, which already
+  inferred the action, were unaffected; the small model now acts too.
 
 The honest one-liner: **AsOf detects and surfaces real file-staleness reliably
-and without false positives across every model tested. Capable models act on
-the terse verdict; a 4 B model needs the staleness phrased as a plain imperative
-— a fixable AsOf-wording gap, not a model-capability ceiling.**
+and without false positives across every model tested. Capable models acted on
+even the terse verdict; the 4 B model needed the staleness spelled out as an
+imperative — a wording gap AsOf now closes. With the re-read imperative in the
+verdict, all three OSS models heed it (9–10/10).**
 
 ## Where it's weak (honestly)
 
