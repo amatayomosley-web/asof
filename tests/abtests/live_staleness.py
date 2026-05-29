@@ -139,8 +139,10 @@ def run_cell(
 
 
 def ollama_model_fn(model: str = "deepseek-r1:32b", *, think: bool = True,
-                    num_ctx: int = 8192, num_predict: int = 4096,
+                    num_ctx: int = 4096, num_predict: int = 4096,
                     temperature: float = 0.6, url: str = "http://localhost:11434") -> ModelFn:
+    # num_ctx 4096: the prompts here are small, and findings.md notes
+    # deepseek-r1:32b needs this ceiling on a 24 GB GPU to avoid OOM.
     """Build a model_fn that calls Ollama's /api/chat (DeepSeek-R1 by default)."""
     import requests
 
