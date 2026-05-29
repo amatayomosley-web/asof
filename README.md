@@ -18,6 +18,8 @@ The model treats Q3 2025 as the prospective next earnings. **Misses that today i
 
 Same model. Same prompt. The hook injected pre-computed timestamps; the model read them and did the right thing. The same behavior change holds across Gemma 4, Mistral Small 3, DeepSeek-R1, and all three Claude tiers.
 
+**Does it actually change behaviour, measured?** Yes — a 429-cell A/B test across all six models, with clean 0% controls. **[See the evaluation →](docs/evaluation.md)**
+
 ---
 
 ## What it does
