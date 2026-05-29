@@ -1,0 +1,90 @@
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 0, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "Now that you've provided the current contents of `deploy_config.txt`, I can produce the deploy command.\n\nThe final deploy command is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 0, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deployment command using the specified token is:\n\n```bash\ndeploy --token REL-7741\n```", "seed": 0, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\ndeploy --token REL-9982-HOTFIX", "seed": 1, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 1, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 2, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The deploy command using the current DEPLOY_TOKEN from `deploy_config.txt` is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 2, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 2, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": true, "verdict": "clean", "final": "The final deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n```\ndeploy --token REL-7741\n```", "seed": 3, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The final deploy command using the current DEPLOY_TOKEN from deploy_config.txt is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 4, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command is constructed by taking the DEPLOY_TOKEN value from the deploy_config.txt file and appending it to the command structure. The current token is REL-7741.\n\n`deploy --token REL-7741`", "seed": 4, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\ndeploy --token REL-7741", "seed": 5, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "To execute the deployment with the updated token from `deploy_config.txt`, use the following command:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```\n\nThis command uses the most recent DEPLOY_TOKEN value obtained from the configuration file, ensuring that your deployment process utilizes the correct and up-to-date token.", "seed": 5, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 5, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\ndeploy --token REL-7741", "seed": 6, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The final deploy command is:\n\n`deploy --token REL-9982-HOTFIX`", "seed": 6, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\ndeploy --token REL-7741", "seed": 6, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 7, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The final deploy command is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 7, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\ndeploy --token REL-7741", "seed": 7, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n`deploy --token REL-7741`", "seed": 8, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "Now that I have the current contents of `deploy_config.txt`, I can produce the deploy command using the DEPLOY_TOKEN:\n\n`deploy --token REL-9982-HOTFIX`", "seed": 8, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n```\ndeploy --token REL-7741\n```", "seed": 8, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "The deploy command using the DEPLOY_TOKEN from deploy_config.txt is:\n\n```\ndeploy --token REL-7741\n```", "seed": 9, "model": "deepseek-r1:32b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "The latest DEPLOY_TOKEN from `deploy_config.txt` is **REL-9982-HOTFIX**. Using this value, the deploy command is:\n\n```bash\ndeploy --token REL-9982-HOTFIX\n```", "seed": 9, "model": "deepseek-r1:32b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 9, "model": "deepseek-r1:32b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 0, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 1, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 1, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 2, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 3, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 4, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 4, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 5, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 5, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 6, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 6, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 7, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 7, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 8, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 8, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "gemma4:e4b"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 9, "model": "gemma4:e4b"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 9, "model": "gemma4:e4b"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 0, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 1, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 1, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 2, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 2, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 3, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 4, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 4, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 5, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 5, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 6, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 6, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 7, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 7, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 8, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 8, "model": "mistral-small:latest"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "mistral-small:latest"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 9, "model": "mistral-small:latest"}
+{"condition": "control", "asof_fired": false, "reread": false, "verdict": "clean", "final": "deploy --token REL-7741", "seed": 9, "model": "mistral-small:latest"}
