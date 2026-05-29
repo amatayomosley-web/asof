@@ -118,6 +118,37 @@ even the terse verdict; the 4 B model needed the staleness spelled out as an
 imperative — a wording gap AsOf now closes. With the re-read imperative in the
 verdict, all three OSS models heed it (9–10/10).**
 
+### How far does it reach? (verdict framing × model family)
+
+A follow-up ran the three framings — **reg** (no verdict), **implied** (terse
+status only), **directive** (status + imperative) — across a size ladder of
+smaller models, 10 seeds each:
+
+| Model | reg | implied | directive |
+|---|---|---|---|
+| gemma2-2b | 0/10 | 0/10 | 0/10 |
+| llama3.1-8b | 0/10 | 0/10 | 0/10 |
+| gemma2-9b | 0/10 | 0/10 | 0/10 |
+| qwen2.5-7b | 0/10 | 9/10 | **10/10** |
+| qwen2.5-14b | 0/10 | **0/10** | **10/10** |
+
+Two populations, and the split is **model family, not size**:
+
+- **Models that engage the re-read affordance.** qwen2.5 (7 B acts on even the
+  terse verdict; 14 B *only* on the directive — a clean case of the imperative
+  being load-bearing), plus gemma4-e4b (0→9) and deepseek/mistral above. AsOf
+  works on these, and the directive is a real, free improvement.
+- **Models that won't engage it at all.** gemma2 (2 B *and* 9 B) and
+  llama3.1-8b sat at 0/10 across *every* framing — and a probe confirms they
+  don't emit the re-read step even on a plain "this file may have changed —
+  re-read it" command. No verdict wording reaches them, because they won't take
+  the action. That's a model floor, not an AsOf failure.
+
+Note the family signal: qwen2.5-7b (7 B) acts where gemma2-9b (9 B) won't —
+whether AsOf's affordance lands tracks instruction-following, not parameter
+count. So the imperative *extends* AsOf's reach (qwen-14b, gemma4-e4b) and never
+costs anything, but it can't manufacture an action a model won't take.
+
 ## Where it's weak (honestly)
 
 - **N=3 seeds/cell** — read these as direction-of-effect, not precise magnitude.
