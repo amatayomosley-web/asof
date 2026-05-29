@@ -1,0 +1,150 @@
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "```\ndeploy --token REL-7741\n```", "seed": 0, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 0, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 0, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 1, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 1, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 1, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 2, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 2, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 2, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 3, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 3, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 3, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 4, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 4, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 4, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "```bash\ndeploy --token REL-7741\n```", "seed": 5, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741`", "seed": 5, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```bash\ndeploy --token REL-7741\n```", "seed": 5, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 6, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 6, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 6, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 7, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 7, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741`", "seed": 7, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 8, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741` \n", "seed": 8, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```bash\ndeploy --token REL-7741\n```", "seed": 8, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 9, "model": "gemma2:2b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```bash\ndeploy --token REL-7741\n```", "seed": 9, "model": "gemma2:2b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 9, "model": "gemma2:2b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 1, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 1, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 2, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 4, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 4, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 5, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 5, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 6, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 6, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 7, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 7, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 8, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 8, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "qwen2.5:7b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 9, "model": "qwen2.5:7b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 9, "model": "qwen2.5:7b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741`", "seed": 5, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741`", "seed": 6, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "llama3.1:8b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "llama3.1:8b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "llama3.1:8b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 0, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 0, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 0, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741  \n", "seed": 1, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 1, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741  \n", "seed": 1, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 2, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```\ndeploy --token REL-7741 \n```", "seed": 2, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 2, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 3, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 3, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 3, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 4, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 4, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 4, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 5, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```\ndeploy --token REL-7741\n```", "seed": 5, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 5, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 6, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "`deploy --token REL-7741`", "seed": 6, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 6, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 7, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 7, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 7, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 8, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "```bash\ndeploy --token REL-7741\n```", "seed": 8, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 8, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741  \n", "seed": 9, "model": "gemma2:9b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 9, "model": "gemma2:9b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741 \n", "seed": 9, "model": "gemma2:9b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 0, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 0, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 1, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 1, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 2, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 2, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 3, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 3, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 4, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 4, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 5, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 5, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 6, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 6, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 7, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 7, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 8, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 8, "model": "qwen2.5:14b", "framing": "directive"}
+{"condition": "A", "asof_fired": false, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "qwen2.5:14b", "framing": "reg"}
+{"condition": "implied", "asof_fired": true, "reread": false, "verdict": "stale", "final": "deploy --token REL-7741", "seed": 9, "model": "qwen2.5:14b", "framing": "implied"}
+{"condition": "B", "asof_fired": true, "reread": true, "verdict": "fresh", "final": "deploy --token REL-9982-HOTFIX", "seed": 9, "model": "qwen2.5:14b", "framing": "directive"}
