@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "asoftime"
 version = "0.1.0"
-description = "Temporal-awareness hook for tool-using LLMs. Surfaces freshness verdicts on in-context data so stale information doesn't poison fresh reasoning. Adapters for Claude Code, Antigravity, and generic harnesses (LangGraph, CrewAI, raw SDK pipelines)."
+description = "Temporal-awareness hook for tool-using LLMs. Surfaces freshness verdicts on in-context data so stale information doesn't poison fresh reasoning. Adapters for Claude Code, Antigravity, generic harnesses (LangGraph, CrewAI, raw SDK pipelines), and an MCP server for any MCP-compatible client."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
     { name = "Maximillian Mosley" },
 ]
-keywords = ["llm", "temporal", "staleness", "freshness", "rag", "ai-tools", "hook", "claude-code", "antigravity", "ollama", "langgraph", "crewai"]
+keywords = ["llm", "temporal", "staleness", "freshness", "rag", "ai-tools", "hook", "mcp", "model-context-protocol", "claude-code", "antigravity", "ollama", "langgraph", "crewai"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -33,6 +33,9 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
 ]
+mcp = [
+    "mcp>=1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/amatayomosley-web/asof"
@@ -42,6 +45,7 @@ Issues = "https://github.com/amatayomosley-web/asof/issues"
 
 [project.scripts]
 asof = "asof_core.cli:main"
+asof-mcp = "adapters.mcp.server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
