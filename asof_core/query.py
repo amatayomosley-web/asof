@@ -49,7 +49,7 @@ def query(target: str, *, kind_hint: Optional[str] = None, session_log: Optional
     if kind == "file":
         return _query_file(target, session_log)
     if kind == "url":
-        return _query_url(target)
+        return _query_url(target, session_log)
     if kind == "timestamp":
         return _query_timestamp(target)
     if kind == "model":
@@ -79,6 +79,11 @@ def _detect_kind(target: str) -> str:
         if "Q" in target.upper() and any(c.isdigit() for c in target):
             return "timestamp"
         # Word-form date check below
+    # Registered model IDs outside the known-prefix set (deepseek-*, gemma*,
+    # bare Ollama tags): detect by a successful cutoff lookup before falling
+    # back to generic text, so they route to the cutoff path.
+    if lookup_cutoff(target):
+        return "model"
     return "text"
 
 
@@ -94,8 +99,13 @@ def _query_file(path: str, session_log: Optional[list[dict]]) -> dict:
             "detail": {},
         }
 
-    # If we have a session log, find the most recent Read for this path
+    # If we have a session log, find the most recent Read for this path —
+    # capturing its size/hash baseline too, so the size and hash rungs in
+    # classify_file_freshness can run (without them, a no-op write that only
+    # moves mtime is mis-reported as stale).
     mtime_at_read = None
+    size_at_read = None
+    hash_at_read = None
     later_writes: list[float] = []
     if session_log:
         for r in session_log:
@@ -106,6 +116,8 @@ def _query_file(path: str, session_log: Optional[list[dict]]) -> dict:
                 if r.get("tool_name") == "Read":
                     if mtime_at_read is None or mtime > mtime_at_read:
                         mtime_at_read = mtime
+                        size_at_read = r.get("size_bytes")
+                        hash_at_read = r.get("hash_at_read")
                 elif r.get("tool_name") in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
                     later_writes.append(mtime)
 
@@ -126,7 +138,13 @@ def _query_file(path: str, session_log: Optional[list[dict]]) -> dict:
         }
 
     # Compare and classify
-    verdict = classify_file_freshness(path, mtime_at_read, later_self_writes=later_writes)
+    verdict = classify_file_freshness(
+        path,
+        mtime_at_read,
+        later_self_writes=later_writes,
+        size_at_read=size_at_read,
+        hash_at_read=hash_at_read,
+    )
     return {
         "kind": "file",
         "target": path,
@@ -202,15 +220,20 @@ def _query_timestamp(text: str) -> dict:
     q = parse_quarter(text)
     if q:
         gap_days = (now - q["announce_date"]).days
+        fiscal_note = (
+            " [FY tag — announce date assumes a calendar year; verify the issuer's fiscal calendar]"
+            if q.get("fiscal") else ""
+        )
         return {
             "kind": "timestamp",
             "target": text,
             "verdict": "stale" if gap_days > 90 else "fresh",
-            "reason": f"resolved to Q{q['quarter']} {q['year']} (announced ~{q['announce_date'].isoformat()})",
+            "reason": f"resolved to Q{q['quarter']} {q['year']} (announced ~{q['announce_date'].isoformat()}){fiscal_note}",
             "detail": {
                 "resolved": q["announce_date"].isoformat(),
                 "year": q["year"],
                 "quarter": q["quarter"],
+                "fiscal": q.get("fiscal", False),
                 "gap_days": gap_days,
                 "gap_human": humanize_gap(gap_days),
             },
@@ -244,7 +267,7 @@ def _query_timestamp(text: str) -> dict:
 def _query_model(model_id: str) -> dict:
     """Look up the model's training cutoff and compute gap."""
     cutoff = lookup_cutoff(model_id)
-    if not cutoff or cutoff == "UNKNOWN-PENDING":
+    if not cutoff:
         return {
             "kind": "model",
             "target": model_id,

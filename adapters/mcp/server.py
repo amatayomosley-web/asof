@@ -30,7 +30,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 
 from asof_core.query import query as _query
-from asof_core.cutoffs import lookup_cutoff, gap_to_now
+from asof_core.cutoffs import resolve_cutoff, gap_to_now
 
 mcp = FastMCP("asof")
 
@@ -73,12 +73,17 @@ def asof_cutoff(model_id: str) -> dict:
     Returns the registered training cutoff and how long ago it was, so the
     caller knows how stale its parametric knowledge may be. Returns
     cutoff=None when the model is not in AsOf's registry.
+
+    Uses the full resolver (env override -> ~/.asof config map -> registry ->
+    Ollama modelfile scan) so operator-set cutoffs are honored over MCP, not
+    just the bare registry.
     """
-    cutoff = lookup_cutoff(model_id)
-    if not cutoff or cutoff == "UNKNOWN-PENDING":
+    res = resolve_cutoff(model_id)
+    cutoff = res["cutoff"]
+    if not cutoff:
         return {"model": model_id, "cutoff": None,
                 "reason": "no cutoff registered for this model"}
-    return {"model": model_id, "cutoff": cutoff, **gap_to_now(cutoff)}
+    return {"model": model_id, "cutoff": cutoff, "source": res["source"], **gap_to_now(cutoff)}
 
 
 def main() -> None:

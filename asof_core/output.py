@@ -52,12 +52,20 @@ def _format_cutoff_section(cutoff_gap: dict) -> list[str]:
     """
     cutoff_str = cutoff_gap.get("cutoff_str")
     if cutoff_str:
-        return [
+        lines = [
             "",
             "## Training cutoff",
             f"  Cutoff: {cutoff_str} ({cutoff_gap.get('human') or 'gap unknown'})",
             "  Hedge factual claims about state newer than the cutoff.",
         ]
+        # Approximate registry rows (flagged "verify" in the table) carry lower
+        # confidence — say so rather than presenting them as authoritative.
+        if str(cutoff_gap.get("source", "")).endswith("approximate"):
+            lines.append(
+                "  (Cutoff is approximate — verify against the vendor's model "
+                "card; pin an exact value in ~/.asof/config.json.)"
+            )
+        return lines
     mid = cutoff_gap.get("model_id")
     who = f" for '{mid}'" if mid else ""
     key = mid or "<model-id>"
@@ -87,6 +95,15 @@ def _format_file_freshness(stale_files: list[dict]) -> list[str]:
              "Re-read any file below before relying on its earlier contents — "
              "it changed on disk since it was last read."]
     for f in stale_files:
+        # Flood-overflow summary entry (from surfacing.decide_surfacing) — render
+        # a count line, not a STALE/path row.
+        overflow = f.get("overflow")
+        if overflow:
+            lines.append(
+                f"  ...and {overflow} more changed file{'s' if overflow != 1 else ''} "
+                "(re-read as you reach them)"
+            )
+            continue
         lines.append(f"  STALE  {f['path']:50s}  {f.get('reason', 'mtime moved after read')}")
         # Co-locate a copy of the datum with its warning (opt-in capture), so
         # an LLM reasoning from the cached read sees the stale flag beside it.
@@ -129,6 +146,8 @@ def _format_timestamps(timestamps: list[dict]) -> list[str]:
             quarters = ts.get("quarter")
             year = ts.get("year")
             line += f"  (Q{quarters} {year}, announced ~mid-{ts['resolved'].strftime('%b %Y')})"
+            if ts.get("fiscal"):
+                line += " [FY tag — calendar year assumed]"
         lines.append(line)
     return lines
 

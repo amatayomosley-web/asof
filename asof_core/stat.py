@@ -29,8 +29,18 @@ MTIME_TOLERANCE_SECONDS = 2.0
 
 # Files larger than this are not hashed (latency budget — hashing reads the
 # whole file). Over-cap files fall back to size/mtime only. Configurable via
-# ASOF_HASH_CAP_BYTES. See docs/staleness-surfacing-design.md.
-DEFAULT_HASH_CAP_BYTES = 5 * 1024 * 1024  # 5 MB
+# the ASOF_HASH_CAP_BYTES env var. See docs/staleness-surfacing-design.md.
+def _default_hash_cap_bytes() -> int:
+    raw = os.environ.get("ASOF_HASH_CAP_BYTES")
+    if raw:
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+    return 5 * 1024 * 1024  # 5 MB
+
+
+DEFAULT_HASH_CAP_BYTES = _default_hash_cap_bytes()
 
 
 def content_hash(path: str | Path, cap_bytes: int = DEFAULT_HASH_CAP_BYTES) -> Optional[str]:
@@ -171,8 +181,11 @@ def classify_file_freshness(
     age = now_epoch - mtime_at_read
     drift = current_mtime - mtime_at_read
 
-    # mtime unchanged within tolerance → fresh
-    if drift <= tolerance:
+    # mtime within tolerance in EITHER direction → unchanged → fresh. A
+    # backwards jump (a restore, or git checkout to an older mtime) is NOT
+    # fresh: abs() lets it fall through to the size/hash rungs, which catch
+    # changed content even when the timestamp went down.
+    if abs(drift) <= tolerance:
         return {
             "verdict": "fresh",
             "reason": "mtime unchanged since read",
@@ -194,46 +207,44 @@ def classify_file_freshness(
                 }
 
     # Size rung — a sound one-way signal. Different byte count ⇒ content
-    # definitely changed (confident stale, no hash). Same size is inconclusive
-    # (could be a no-op write or an equal-length edit) and falls through to the
-    # hash rung.
+    # definitely changed (confident stale, no hash needed).
     current_size = s.get("size_bytes")
     base = {"current_mtime": current_mtime, "age_seconds": age, "drift_seconds": drift}
-    if size_at_read is not None and current_size is not None:
-        if current_size != size_at_read:
-            return {
-                "verdict": "stale",
-                "reason": f"size changed {size_at_read}->{current_size} bytes after read",
-                **base,
-            }
-        # size unchanged — hash rung (only when a read-time baseline exists)
-        if hash_at_read is not None:
-            current_hash = content_hash(path, cap_bytes=hash_cap_bytes)
-            if current_hash is not None:
-                if current_hash == hash_at_read:
-                    return {
-                        "verdict": "fresh",
-                        "reason": "content identical despite mtime change (no-op write)",
-                        **base,
-                    }
+    if size_at_read is not None and current_size is not None and current_size != size_at_read:
+        return {
+            "verdict": "stale",
+            "reason": f"size changed {size_at_read}->{current_size} bytes after read",
+            **base,
+        }
+
+    # Hash rung — runs whenever a read-time hash baseline exists, independent of
+    # the size rung (same-size, OR size-unknown, both reach here). A matching
+    # hash means the mtime moved but the bytes didn't: a no-op write ⇒ fresh.
+    if hash_at_read is not None:
+        current_hash = content_hash(path, cap_bytes=hash_cap_bytes)
+        if current_hash is not None:
+            if current_hash == hash_at_read:
                 return {
-                    "verdict": "stale",
-                    "reason": f"content changed (same size) {format_drift(drift)} after read",
+                    "verdict": "fresh",
+                    "reason": "content identical despite mtime change (no-op write)",
                     **base,
                 }
-            # over hash cap — can't verify
             return {
                 "verdict": "stale",
-                "reason": f"mtime moved, size unchanged, too large to hash-verify",
+                "reason": f"content changed {format_drift(abs(drift))} after read",
                 **base,
             }
+        # over hash cap — can't verify
+        return {
+            "verdict": "stale",
+            "reason": "mtime moved, too large to hash-verify",
+            **base,
+        }
 
     return {
         "verdict": "stale",
-        "reason": f"mtime moved {format_drift(drift)} after read, no matching self-write",
-        "current_mtime": current_mtime,
-        "age_seconds": age,
-        "drift_seconds": drift,
+        "reason": f"mtime moved {format_drift(abs(drift))} after read, no matching self-write",
+        **base,
     }
 
 
@@ -257,6 +268,18 @@ def format_duration(seconds: float) -> str:
     return format_drift(seconds)
 
 
+# Common extensionless filenames the extension-based patterns can't catch
+# (build files, license/readme, dotfiles). Matched as whole tokens, optionally
+# with a leading directory.
+_KNOWN_EXTENSIONLESS = (
+    "Dockerfile", "Makefile", "Rakefile", "Gemfile", "Procfile",
+    "Jenkinsfile", "Vagrantfile", "LICENSE", "README", "CHANGELOG",
+    "AUTHORS", "NOTICE", "Pipfile", "Brewfile",
+    ".gitignore", ".dockerignore", ".env", ".editorconfig",
+    ".gitattributes", ".npmrc",
+)
+
+
 def extract_paths_from_text(text: str) -> list[str]:
     """Extract path-like strings from text. Returns paths that look
     filesystem-like; caller checks existence via stat.
@@ -267,6 +290,7 @@ def extract_paths_from_text(text: str) -> list[str]:
     - Relative paths with extension: src/auth.py, ./config.yaml
     - Tilde-prefixed: ~/notes.md, ~/.config/file.json
     - Backtick-quoted: `auth.py`
+    - Known extensionless files: Dockerfile, Makefile, LICENSE, .gitignore
 
     False positives are acceptable — the stat call filters non-existent
     paths. The watch suppresses paths that don't resolve.
@@ -290,6 +314,18 @@ def extract_paths_from_text(text: str) -> list[str]:
         for m in re.finditer(pat, text):
             candidate = m.group(1) if m.lastindex else m.group(0)
             candidate = candidate.strip("`'\"")
+            if candidate not in seen:
+                seen.add(candidate)
+                found.append(candidate)
+    # Known extensionless filenames (optionally directory-prefixed). The
+    # leading lookbehind avoids matching mid-word ('MyDockerfile', 'foo.env');
+    # the trailing lookahead avoids names that actually carry an extension
+    # ('Dockerfile.bak'), which the patterns above already handle.
+    for name in _KNOWN_EXTENSIONLESS:
+        for m in re.finditer(
+            rf"(?<![\w/\\.-])((?:[\w.\\-]+[/\\])?{re.escape(name)})(?![\w.])", text
+        ):
+            candidate = m.group(1)
             if candidate not in seen:
                 seen.add(candidate)
                 found.append(candidate)

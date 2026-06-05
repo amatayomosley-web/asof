@@ -71,6 +71,7 @@ def parse_quarter(text: str) -> Optional[dict]:
     """
     text = text.strip()
 
+    fiscal = False
     # Q<N> <YEAR> or Q<N>FY<YEAR>
     m = re.search(r"\bQ([1-4])\s*(?:FY)?\s*(\d{4})\b", text, re.IGNORECASE)
     if not m:
@@ -91,6 +92,11 @@ def parse_quarter(text: str) -> Optional[dict]:
     else:
         quarter = int(m.group(1))
         year = int(m.group(2))
+        # An "FY" tag means the year is fiscal, not calendar — but we don't know
+        # the issuer's fiscal calendar, so the calendar-based announce_date below
+        # is only a heuristic. Flag it so surfaces can hedge rather than present
+        # a fiscal-quarter date as authoritative.
+        fiscal = "fy" in m.group(0).lower()
 
     announce_month = QUARTER_ANNOUNCE_MONTHS[quarter]
     announce_year = year if quarter != 4 else year + 1
@@ -102,6 +108,7 @@ def parse_quarter(text: str) -> Optional[dict]:
         "year": year,
         "quarter": quarter,
         "announce_date": announce_date,
+        "fiscal": fiscal,
     }
 
 
@@ -169,8 +176,10 @@ def find_timestamps(text: str, *, base_date: Optional[date] = None) -> list[dict
             **extra,
         })
 
-    # ISO dates
-    for m in re.finditer(r"\b(\d{4}-\d{1,2}-\d{1,2})\b", text):
+    # ISO dates. Trailing (?![\d-]) instead of \b so the date portion of an ISO
+    # *datetime* ("2026-05-24T16:00:00Z") still matches — a digit-to-T seam is
+    # not a word boundary, so the old \b silently skipped every ISO datetime.
+    for m in re.finditer(r"\b(\d{4}-\d{1,2}-\d{1,2})(?![\d-])", text):
         d = parse_iso(m.group(1))
         if d:
             _add(m.group(1), d, "iso", m.span())
@@ -191,6 +200,7 @@ def find_timestamps(text: str, *, base_date: Optional[date] = None) -> list[dict
                     m.span(),
                     year=q["year"],
                     quarter=q["quarter"],
+                    fiscal=q.get("fiscal", False),
                 )
 
     # Relative phrases (handled by dateparser, scoped to common shapes)

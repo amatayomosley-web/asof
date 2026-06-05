@@ -3,7 +3,7 @@
 ## Quick install
 
 ```bash
-pip install asof
+pip install asoftime
 asof install
 ```
 
@@ -16,7 +16,16 @@ If you prefer to wire it up yourself:
 ### 1. Install the Python package
 
 ```bash
-pip install asof
+pip install asoftime
+```
+
+The PyPI package is named `asoftime` (the CLI command is `asof`). Do not
+`pip install asof` — that name belongs to an unrelated package on PyPI.
+
+Or install the latest straight from source (immune to the name collision):
+
+```bash
+pip install git+https://github.com/amatayomosley-web/asof.git
 ```
 
 Verify: `python -c "import asof_core; print(asof_core.__version__)"`
@@ -115,7 +124,7 @@ rm -rf ~/.claude/skills/asof
 asof install --uninstall  # V2
 ```
 
-Then `pip uninstall asof`.
+Then `pip uninstall asoftime`.
 
 ## Troubleshooting
 
@@ -136,7 +145,7 @@ Then `pip uninstall asof`.
 The hook version and SKILL.md version don't match per the schema-version contract. Run:
 
 ```bash
-pip install --upgrade asof
+pip install --upgrade asoftime
 asof install
 ```
 

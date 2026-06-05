@@ -46,6 +46,12 @@ DEFAULT_HEARTBEAT_TURNS = 12
 # so the heartbeat goes quiet (first-surface was already delivered).
 DEFAULT_WORKING_SET_TURNS = 15
 
+# Max files to first-surface in a single turn. A mass mtime change (git pull,
+# checkout, formatter run) can turn dozens of tracked files stale at once;
+# dumping them all is its own habituation failure. Overflow defers to later
+# turns (not dropped) and is summarized as "...and N more changed".
+DEFAULT_MAX_FIRST_SURFACE = 10
+
 
 def _config_int(env_key: str, cfg_key: str, default: int) -> int:
     """Resolve an int knob from env var, then ~/.asof/config.json, then default."""
@@ -76,6 +82,10 @@ def working_set_turns() -> int:
     return _config_int("ASOF_WORKING_SET_TURNS", "working_set_turns", DEFAULT_WORKING_SET_TURNS)
 
 
+def max_first_surface() -> int:
+    return _config_int("ASOF_MAX_SURFACE", "max_surface", DEFAULT_MAX_FIRST_SURFACE)
+
+
 def _state_path(session_id: str, state_dir: Optional[Path]) -> Path:
     if state_dir is None:
         state_dir = Path.home() / ".asof" / "session_state"
@@ -104,10 +114,20 @@ def save_state(session_id: str, state: dict, state_dir: Optional[Path] = None) -
     p = _state_path(session_id, state_dir)
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
-        with p.open("w", encoding="utf-8") as f:
+        # Atomic write: serialize to a pid-scoped temp in the same directory,
+        # then os.replace (atomic on a single filesystem). An interrupted write
+        # can corrupt only the temp, never the live state — so load_state never
+        # falls back to the skeleton and re-broadcasts every stale file (the
+        # exact v0.1.0 regression this module exists to prevent).
+        tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+        with tmp.open("w", encoding="utf-8") as f:
             json.dump(state, f)
+        os.replace(tmp, p)
     except (OSError, TypeError, ValueError):
-        pass
+        try:
+            tmp.unlink()
+        except (OSError, NameError, UnboundLocalError):
+            pass
 
 
 def decide_surfacing(
@@ -144,7 +164,9 @@ def decide_surfacing(
         fs = files_state.setdefault(p, {})
         fs["last_access_turn"] = current_turn
 
+    max_surface = max_first_surface()
     surfaced: list[dict] = []
+    deferred = 0
     for f in stale_files:
         path = f["path"]
         cur_mtime = f.get("current_mtime")
@@ -171,8 +193,31 @@ def decide_surfacing(
         in_working_set = (current_turn - last_access_turn) <= working_set
 
         if first_time or new_delta or (heartbeat_due and in_working_set):
+            if len(surfaced) >= max_surface:
+                # Flood control: cap surfaces per turn. Deferred files are NOT
+                # marked surfaced, so they re-surface on a later turn — the mass
+                # change is spread across turns rather than dumped or lost.
+                deferred += 1
+                continue
             surfaced.append(f)
             fs["last_surfaced_turn"] = current_turn
             fs["last_surfaced_mtime"] = cur_mtime
+
+    if deferred:
+        surfaced.append({"path": "", "overflow": deferred, "verdict": "stale", "reason": ""})
+
+    # Bound state growth: forget files that are neither currently stale nor
+    # accessed within the working-set window. A resolved file (no longer stale,
+    # out of the working set) is safe to drop — if it goes stale again that's a
+    # new episode. Still-stale files are KEPT so their surfacing memory survives
+    # and they don't re-first-surface from a cleared record.
+    stale_paths = {f["path"] for f in stale_files}
+    evict_before = current_turn - working_set
+    for p in list(files_state.keys()):
+        if p in stale_paths:
+            continue
+        if files_state[p].get("last_access_turn", 0) >= evict_before:
+            continue
+        del files_state[p]
 
     return surfaced

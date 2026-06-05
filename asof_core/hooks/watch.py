@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -107,13 +108,23 @@ def _evaluate_working_set(records: list[dict],
     `exclude_globs` are skipped entirely (transient/agent-owned paths)."""
     self_writes = _build_self_writes_index(records)
     globs = exclude_globs or []
-    stale: list[dict] = []
+
+    # Dedupe to the LATEST Read per path before evaluating. The tool log is
+    # append-only and chronological, so a later Read supersedes an earlier one
+    # — without this, an earlier Read's stale mtime_at_read fires a false STALE
+    # even after the agent re-read the file fresh this session.
+    latest_read: dict[str, dict] = {}
     for r in records:
         if r.get("tool_name") != "Read":
             continue
         path = r.get("input_summary") or ""
+        if path:
+            latest_read[path] = r
+
+    stale: list[dict] = []
+    for path, r in latest_read.items():
         mtime_at_read = r.get("mtime_at_read")
-        if not path or mtime_at_read is None:
+        if mtime_at_read is None:
             continue
         if _excluded_from_staleness(path, globs):
             continue
@@ -231,7 +242,10 @@ def watch(
     if config is None:
         config = {}
 
-    mode = config.get("mode", "normal")
+    # ASOF_MODE env override (documented operator control at README.md:88) ->
+    # config -> default. Only the three valid modes are honored from env.
+    env_mode = os.environ.get("ASOF_MODE", "").strip().lower()
+    mode = env_mode if env_mode in ("silent", "normal", "strict") else config.get("mode", "normal")
 
     log_path = log_dir / f"{session_id}.jsonl"
     records = _load_tool_log(log_path)
@@ -272,10 +286,19 @@ def watch(
 
     # Pattern-based time-sensitive phrasing
     pattern_cfg = config.get("patterns", {}) or {}
+    # ASOF_DOMAINS env override (comma-separated, documented at README.md:88) ->
+    # config patterns.domains. Env wins when set so operators can toggle packs
+    # per-run without editing config.json.
+    env_domains = os.environ.get("ASOF_DOMAINS", "")
+    domains = (
+        [d.strip() for d in env_domains.split(",") if d.strip()]
+        if env_domains.strip()
+        else pattern_cfg.get("domains", [])
+    )
     matcher = PatternMatcher(
         high_confidence=pattern_cfg.get("high_confidence", True),
         medium_confidence=pattern_cfg.get("medium_confidence", True),
-        domains=pattern_cfg.get("domains", []),
+        domains=domains,
     )
     pattern_matches = matcher.match_all(prompt_text) if prompt_text else []
 

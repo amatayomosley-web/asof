@@ -5,9 +5,13 @@ Temporal awareness for Claude Code sessions.
 ## Install
 
 ```bash
-pip install asof
+pip install asoftime
 asof install
 ```
+
+The PyPI package is `asoftime` (the command is `asof`) — don't `pip install asof`,
+that's an unrelated package. Or install from source:
+`pip install git+https://github.com/amatayomosley-web/asof.git`
 
 The installer auto-detects Claude Code at `~/.claude/` and:
 1. Copies `SKILL.md` to `~/.claude/skills/asof/`
@@ -70,7 +74,7 @@ Checks that:
 ## Troubleshooting
 
 - **No AsOf block appears in context.** Expected for casual turns — adaptive rendering. If you've Read a file and externally edited it, the next turn should produce a STALE alert. If not: run `asof check` and verify the PostToolUse hook is wired.
-- **`INCOMPATIBLE` notice in output.** Hook and SKILL.md are on incompatible schema versions. Run `pip install --upgrade asof && asof install` to align.
+- **`INCOMPATIBLE` notice in output.** Hook and SKILL.md are on incompatible schema versions. Run `pip install --upgrade asoftime && asof install` to align.
 - **Hook timing out.** The hook should run in ~100-300ms. If slower, check `~/.asof/tool_log/<session_id>.jsonl` for size — very long sessions can accumulate large logs. Rotation is V2.
 
 ## Schema version

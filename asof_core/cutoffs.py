@@ -39,6 +39,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from asof_core.timestamps import humanize_gap
+
 
 # Cutoff format: "YYYY-MM" — first-of-month is used for arithmetic.
 TRAINING_CUTOFFS: dict[str, str] = {
@@ -85,22 +87,44 @@ TRAINING_CUTOFFS: dict[str, str] = {
 }
 
 
-def _registry_match(model_id: str) -> Optional[str]:
-    """Exact then bidirectional-prefix match against TRAINING_CUTOFFS.
+# Registry rows whose cutoff is marked "approximate; verify" in the table —
+# resolved with lower confidence so the surface hedges rather than presenting
+# them as authoritative.
+_APPROXIMATE_KEYS = frozenset({
+    "gemma4-e4b", "gemma4-e2b", "gemma-3-27b-it",
+    "deepseek-r1-distill-qwen-32b", "mistral-nemo",
+})
 
-    No env/config layer — pure table lookup. Prefix matching handles versioned
-    IDs ('claude-opus-4-7-20260115' -> 'claude-opus-4-7') and the Ollama tag
-    form ('deepseek-r1:32b' -> 'deepseek-r1').
+
+def _registry_match_key(model_id: str) -> Optional[str]:
+    """Return the TRAINING_CUTOFFS key best matching `model_id`, or None.
+
+    Exact match wins; otherwise the LONGEST forward-prefix match (a versioned/
+    tagged form of a known base: 'claude-opus-4-7-20260115' -> 'claude-opus-4-7',
+    'deepseek-r1:32b' -> 'deepseek-r1'). Forward-prefixes of a fixed string are
+    nested, so the longest is unambiguous.
+
+    No reverse-prefix match: a bare/partial ID ('claude-opus-4') is NOT resolved
+    to a longer specific row's cutoff. The old reverse loop returned a
+    confidently-wrong cutoff (first-by-dict-order) for the wrong sub-version;
+    refusing (None -> conservative "unknown" posture) is the correct behavior.
     """
     if model_id in TRAINING_CUTOFFS:
-        return TRAINING_CUTOFFS[model_id]
-    for known_id in TRAINING_CUTOFFS:
-        if model_id.startswith(known_id):
-            return TRAINING_CUTOFFS[known_id]
-    for known_id in TRAINING_CUTOFFS:
-        if known_id.startswith(model_id):
-            return TRAINING_CUTOFFS[known_id]
-    return None
+        return model_id
+    forward = [k for k in TRAINING_CUTOFFS if model_id.startswith(k)]
+    if not forward:
+        return None
+    return max(forward, key=len)
+
+
+def _registry_match(model_id: str) -> Optional[str]:
+    """Cutoff string for `model_id` via exact-or-longest-prefix match, or None.
+
+    No env/config layer — pure table lookup. Used by lookup_cutoff (and, with
+    provenance, resolve_cutoff).
+    """
+    key = _registry_match_key(model_id)
+    return TRAINING_CUTOFFS[key] if key else None
 
 
 def lookup_cutoff(model_id: str) -> Optional[str]:
@@ -143,29 +167,17 @@ def gap_to_now(cutoff: str, *, now: Optional[date] = None) -> dict:
     - human: a human-readable phrase ('4 months ago', '2 years 3 months ago')
     """
     if now is None:
-        now = datetime.now(timezone.utc).date()
+        # Local date, not UTC — near midnight a UTC date can be a day off the
+        # operator's calendar. Immaterial at month scale but cheap to get right.
+        now = datetime.now().date()
     cutoff_d = cutoff_to_date(cutoff)
     days = (now - cutoff_d).days
     if days < 0:
         return {"days": days, "months": 0, "human": "(cutoff is in the future)"}
     months = days // 30
-    years = months // 12
-    rem_months = months % 12
-
-    if years >= 1:
-        if rem_months > 0:
-            human = f"{years} year{'s' if years > 1 else ''} {rem_months} month{'s' if rem_months > 1 else ''} ago"
-        else:
-            human = f"{years} year{'s' if years > 1 else ''} ago"
-    elif months >= 1:
-        human = f"~{months} month{'s' if months > 1 else ''} ago"
-    elif days >= 7:
-        weeks = days // 7
-        human = f"~{weeks} week{'s' if weeks > 1 else ''} ago"
-    else:
-        human = f"{days} day{'s' if days != 1 else ''} ago"
-
-    return {"days": days, "months": months, "human": human}
+    # Single humanizer (asof_core.timestamps.humanize_gap) so the cutoff phrase
+    # and the timestamp phrase can never diverge at boundaries.
+    return {"days": days, "months": months, "human": humanize_gap(days)}
 
 
 # ----------------------------------------------------------------------------
@@ -295,9 +307,10 @@ def resolve_cutoff(model_id: Optional[str], *, allow_ollama_scan: bool = True,
     if cfg:
         return {"cutoff": cfg, "source": "config"}
 
-    reg = _registry_match(model_id)
-    if reg:
-        return {"cutoff": reg, "source": "registry"}
+    reg_key = _registry_match_key(model_id)
+    if reg_key:
+        source = "registry-approximate" if reg_key in _APPROXIMATE_KEYS else "registry"
+        return {"cutoff": TRAINING_CUTOFFS[reg_key], "source": source}
 
     if allow_ollama_scan:
         scanned = _scan_ollama_cutoff(model_id, runner=ollama_runner)

@@ -11,6 +11,7 @@ Or directly: python -m adapters.claude_code.install
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -139,6 +140,63 @@ def seed_config() -> bool:
     return True
 
 
+def _read_skill_min_version() -> str | None:
+    """Read asof_min_version from the adapter's SKILL.md frontmatter."""
+    src = ADAPTER_DIR / "SKILL.md"
+    try:
+        with src.open(encoding="utf-8") as f:
+            in_frontmatter = False
+            for line in f:
+                s = line.strip()
+                if s == "---":
+                    if in_frontmatter:
+                        break  # end of frontmatter
+                    in_frontmatter = True
+                    continue
+                if in_frontmatter:
+                    m = re.match(r'asof_min_version:\s*["\']?([0-9.]+)["\']?\s*$', s)
+                    if m:
+                        return m.group(1)
+    except OSError:
+        pass
+    return None
+
+
+def record_prose_version() -> bool:
+    """Record the installed SKILL prose's min schema version into
+    ~/.asof/config.json so session_init can run the version-skew guard. Without
+    this, is_compatible() has no prose floor to check against. Idempotent;
+    returns True if a change was written.
+    """
+    version = _read_skill_min_version()
+    if not version:
+        print("  WARN: could not read asof_min_version from SKILL.md; version guard inactive")
+        return False
+
+    if ASOF_CONFIG_PATH.is_file():
+        try:
+            with ASOF_CONFIG_PATH.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            if not isinstance(cfg, dict):
+                cfg = {}
+        except (OSError, json.JSONDecodeError, ValueError):
+            cfg = {}
+    else:
+        cfg = {}
+
+    if cfg.get("prose_min_version") == version:
+        print(f"  config.json already records prose_min_version {version}; no change")
+        return False
+
+    cfg["prose_min_version"] = version
+    ASOF_HOME.mkdir(parents=True, exist_ok=True)
+    with ASOF_CONFIG_PATH.open("w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
+        f.write("\n")
+    print(f"  config.json recorded prose_min_version {version}")
+    return True
+
+
 def verify() -> bool:
     """Quick verification: can we import asof_core, do the hook scripts
     exist on disk, does settings.json have the entries?"""
@@ -190,6 +248,7 @@ def main() -> int:
     install_skill_file()
     patch_settings()
     seed_config()
+    record_prose_version()
     ok = verify()
 
     print()

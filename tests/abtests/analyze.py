@@ -131,12 +131,12 @@ def main():
             a = ratings.get("A", {}).get("flag_rate", None)
             b = ratings.get("B", {}).get("flag_rate", None)
             a2 = ratings.get("A2", {}).get("flag_rate", None)
+            a2_str = f"{a2:.2f}" if a2 is not None else "—"
             if a is None or b is None:
-                lines.append(f"| {cat} | — | — | — | (no data) | {a2:.2f if a2 is not None else '—'} |")
+                lines.append(f"| {cat} | — | — | — | (no data) | {a2_str} |")
                 continue
             delta = b - a
             cls = classify(delta, b, a)
-            a2_str = f"{a2:.2f}" if a2 is not None else "—"
             lines.append(f"| {cat} | {a:.2f} | {b:.2f} | {delta:+.2f} | {cls} | {a2_str} |")
         lines.append("")
 
@@ -174,7 +174,9 @@ def main():
         ratings = model_cat_rates.get((model, "control"), {})
         a = ratings.get("A", {}).get("flag_rate", "—")
         b = ratings.get("B", {}).get("flag_rate", "—")
-        lines.append(f"- `{model}`: A={a:.2f if a != '—' else '—'}, B={b:.2f if b != '—' else '—'}")
+        a_str = f"{a:.2f}" if isinstance(a, (int, float)) else "—"
+        b_str = f"{b:.2f}" if isinstance(b, (int, float)) else "—"
+        lines.append(f"- `{model}`: A={a_str}, B={b_str}")
     lines.append("")
 
     # Cell count footer

@@ -15,6 +15,7 @@ import os
 
 from asof_core.cutoffs import build_cutoff_posture
 from asof_core.output import render_session_init
+from asof_core.version import SCHEMA_VERSION, incompatibility_notice
 
 
 def _file_annotation_enabled() -> bool:
@@ -33,6 +34,30 @@ def _file_annotation_enabled() -> bool:
     return False
 
 
+def _installed_prose_version() -> Optional[str]:
+    """The min schema version the installed SKILL prose declares, recorded by
+    the adapter installer.
+
+    Resolution: ASOF_PROSE_VERSION env -> ~/.asof/config.json 'prose_min_version'
+    -> None (version check skipped, no false alarm — e.g. a manual install that
+    never ran the recorder).
+    """
+    env = os.environ.get("ASOF_PROSE_VERSION")
+    if env and env.strip():
+        return env.strip()
+    try:
+        config_path = Path.home() / ".asof" / "config.json"
+        if config_path.is_file():
+            with config_path.open(encoding="utf-8") as f:
+                cfg = json.load(f)
+            v = cfg.get("prose_min_version")
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    return None
+
+
 def _ensure_tool_log_dir(log_dir: Path) -> None:
     """Create the tool log directory if missing. Silent on errors."""
     try:
@@ -47,6 +72,7 @@ def session_init(
     session_id: Optional[str] = None,
     log_dir: Optional[Path] = None,
     now: Optional[datetime] = None,
+    prose_min_version: Optional[str] = None,
 ) -> str:
     """Emit the session-init block.
 
@@ -75,6 +101,17 @@ def session_init(
     posture = build_cutoff_posture(model_id, now=now.date())
 
     result = render_session_init(current_dt=now, cutoff_gap=posture)
+
+    # Version-skew guard: if the installed SKILL prose declares a min schema
+    # version this running hook doesn't satisfy, surface a loud INCOMPATIBLE
+    # notice rather than letting stale prose run against a newer hook unchecked
+    # (the distribution version-skew permanence fix). Explicit arg wins; else
+    # resolve from env/config. Absent -> skipped (no false alarm).
+    prose_min = prose_min_version or _installed_prose_version()
+    if prose_min:
+        notice = incompatibility_notice(SCHEMA_VERSION, prose_min)
+        if notice:
+            result += notice
 
     # Append file-annotation directive if enabled (opt-in via config or env)
     if _file_annotation_enabled():

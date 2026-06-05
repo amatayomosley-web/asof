@@ -29,10 +29,14 @@ def _detect_substrate() -> str | None:
 
     Returns "claude_code" if ~/.claude/settings.json exists,
     "antigravity" if ~/.gemini/config/hooks.json exists, else None.
+
+    Keys off the settings FILE only — a bare ~/.claude or ~/.gemini directory
+    (e.g. Claude Desktop, with no settings.json) is not a hook substrate and
+    must not be auto-detected as one.
     """
-    if (Path.home() / ".claude" / "settings.json").is_file() or (Path.home() / ".claude").is_dir():
+    if (Path.home() / ".claude" / "settings.json").is_file():
         return "claude_code"
-    if (Path.home() / ".gemini" / "config" / "hooks.json").is_file() or (Path.home() / ".gemini").is_dir():
+    if (Path.home() / ".gemini" / "config" / "hooks.json").is_file():
         return "antigravity"
     return None
 
@@ -64,6 +68,20 @@ def cmd_install(args: argparse.Namespace) -> int:
         print("  asof install --adapter antigravity")
         print("  asof install --adapter generic")
         return 2
+
+    # 'generic' is a manual-integration adapter (SDK-wrapper examples, no
+    # lifecycle hook), so there is no adapters/generic/install.py to run.
+    # Print integration pointers instead of failing on a missing module.
+    if adapter == "generic":
+        print("AsOf 'generic' is a manual-integration adapter — there's no installer.")
+        print()
+        print("Integrate AsOf into your own agent loop:")
+        print("  - Guide:    adapters/generic/README.md")
+        print("  - Examples: adapters/generic/examples/  (e.g. anthropic_sdk_wrapper.py)")
+        print()
+        print("Wrap your turns with asof_core.hooks.session_init / watch, or call")
+        print("asof_core.query.query() as an on-demand oracle.")
+        return 0
 
     print(f"Installing AsOf adapter: {adapter}")
     print()
