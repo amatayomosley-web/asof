@@ -7,6 +7,13 @@ import importlib.util
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
+# The MCP SDK is an optional extra (`pip install asoftime[mcp]`, Python >=3.10).
+# When it's absent — local dev without the extra, or the CI 3.9 leg where `mcp`
+# has no compatible release — skip this module instead of failing collection.
+pytest.importorskip("mcp")
+
 _SERVER = Path(__file__).resolve().parents[1] / "adapters" / "mcp" / "server.py"
 _spec = importlib.util.spec_from_file_location("asof_mcp_server", _SERVER)
 server = importlib.util.module_from_spec(_spec)
