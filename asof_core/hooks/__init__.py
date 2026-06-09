@@ -24,6 +24,6 @@ from __future__ import annotations
 
 from asof_core.hooks.session_init import session_init
 from asof_core.hooks.post_tool import post_tool
-from asof_core.hooks.watch import watch
+from asof_core.hooks.watch import watch, surface_staleness
 
-__all__ = ["session_init", "post_tool", "watch"]
+__all__ = ["session_init", "post_tool", "watch", "surface_staleness"]

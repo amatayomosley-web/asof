@@ -70,10 +70,15 @@ def post_tool_node(state: Dict[str, Any]) -> Dict[str, Any]:
     tool_input = state.get("last_tool_input", {})
 
     if tool_name:
-        post_tool(
+        stale_block = post_tool(
             session_id=session_id,
             tool_name=tool_name,
             tool_input=tool_input,
             now=datetime.now(timezone.utc),
         )
+        # Tier 2: a tool-boundary staleness note (or '') — fold it into the
+        # temporal context the model reads on its next step.
+        if stale_block:
+            prev = state.get("temporal_context") or ""
+            state["temporal_context"] = f"{prev}\n{stale_block}".strip() if prev else stale_block
     return state

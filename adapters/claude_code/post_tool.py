@@ -38,13 +38,24 @@ def main() -> int:
         if not isinstance(tool_response, dict):
             tool_response = None
 
-        post_tool(
+        block = post_tool(
             session_id=session_id,
             tool_name=tool_name,
             tool_input=tool_input,
             tool_response=tool_response,
             now=datetime.now(timezone.utc),
         )
+        if block:
+            # PostToolUse reaches the model only via JSON additionalContext
+            # (plain stdout is NOT injected, unlike UserPromptSubmit). json.dumps
+            # escapes non-ASCII, so this is safe without re-encoding stdout.
+            # Exit 0 → additionalContext is honored.
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "PostToolUse",
+                    "additionalContext": block,
+                }
+            }))
     except (json.JSONDecodeError, OSError, ValueError, TypeError):
         # Silent failure — never break the substrate
         pass

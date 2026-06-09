@@ -100,7 +100,7 @@ def test_external_change_still_flagged_stale(tmp_path):
     # Run a Bash tool whose completion is much LATER (no alignment with the
     # file's mtime → not credited as a self-write).
     much_later = datetime.fromtimestamp(external_mtime + 600, tz=timezone.utc)
-    post_tool(
+    block = post_tool(
         session_id=session_id,
         tool_name="Bash",
         tool_input={"command": "echo unrelated"},
@@ -113,6 +113,14 @@ def test_external_change_still_flagged_stale(tmp_path):
     assert not any(r["input_summary"] == str(target) for r in sw), \
         "external change must NOT be credited as a self-write"
 
-    block = watch(session_id=session_id, prompt_text="", log_dir=log_dir, now=much_later)
+    # Tier 2: post_tool surfaces the genuinely-external change at the tool
+    # boundary (not swallowed as a self-write). Pre-Tier-2 this was asserted on
+    # the following watch(); post_tool now catches it first, so assert on its
+    # returned block.
     assert "File freshness" in block and str(target) in block, \
         f"genuinely-external change should still be flagged stale:\n{block}"
+
+    # ...and watch() on the same turn now correctly dedups it (already surfaced).
+    deduped = watch(session_id=session_id, prompt_text="", log_dir=log_dir, now=much_later)
+    assert str(target) not in deduped, \
+        "watch() must dedup a file post_tool already surfaced this turn"

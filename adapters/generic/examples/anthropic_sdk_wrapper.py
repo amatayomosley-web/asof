@@ -88,6 +88,7 @@ class AsOfClient:
 
         # Extract assistant response and log any tool uses
         assistant_content = []
+        tool_stale_blocks = []
         for block in response.content:
             if hasattr(block, "type"):
                 if block.type == "text":
@@ -99,17 +100,29 @@ class AsOfClient:
                         "name": block.name,
                         "input": block.input,
                     })
-                    post_tool(
+                    # Tier 2: post_tool returns a tool-boundary staleness block
+                    # (or '') — collect any to surface back to the model.
+                    stale_block = post_tool(
                         session_id=self.session_id,
                         tool_name=block.name,
                         tool_input=block.input,
                         now=datetime.now(timezone.utc),
                     )
+                    if stale_block:
+                        tool_stale_blocks.append(stale_block)
 
         if assistant_content:
             self._conversation_messages.append({
                 "role": "assistant",
                 "content": assistant_content,
+            })
+
+        # Surface any tool-boundary staleness as a user-role note so the model
+        # re-reads changed files before its next step.
+        if tool_stale_blocks:
+            self._conversation_messages.append({
+                "role": "user",
+                "content": "\n\n".join(tool_stale_blocks),
             })
 
         return response

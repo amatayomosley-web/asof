@@ -207,6 +207,110 @@ def _evaluate_path_mentions(text: str) -> list[dict]:
     return out
 
 
+def decide_stale_surface(
+    session_id: str,
+    *,
+    advance_turn: bool,
+    log_dir: Path,
+    config: Optional[dict] = None,
+    now: Optional[datetime] = None,
+    extra_accessed: Optional[set] = None,
+) -> list[dict]:
+    """Evaluate working-set freshness and apply the surfacing-dedup policy.
+
+    Shared by the per-message watch and the per-tool surface so a stale file
+    first-surfaces exactly once, whichever hook reaches it first (one surfacing
+    state per session).
+
+    advance_turn=True  — per-message (watch): owns the surfacing turn counter
+        and last_watch_ts; the heartbeat clock ticks once per user message.
+    advance_turn=False — per-tool (post_tool): surfaces a newly-stale file
+        within the CURRENT turn without advancing the counter, so a background
+        edit to a Read file is caught at the next tool boundary instead of
+        waiting for the next user message.
+
+    Returns the post-dedup list of stale files to surface on this fire.
+    """
+    from asof_core import surfacing
+    if config is None:
+        config = {}
+    if now is None:
+        now = datetime.now(timezone.utc)
+    staleness_cfg = config.get("staleness", {}) if isinstance(config, dict) else {}
+    exclude_globs = (
+        staleness_cfg.get("exclude_globs", [])
+        if isinstance(staleness_cfg, dict) else []
+    )
+    log_path = log_dir / f"{session_id}.jsonl"
+    records = _load_tool_log(log_path)
+    stale_files = _evaluate_working_set(records, exclude_globs=exclude_globs)
+
+    surf_state = surfacing.load_state(session_id)
+    if advance_turn:
+        current_turn = surf_state.get("turn", 0) + 1
+        surf_state["turn"] = current_turn
+    else:
+        # Surface within the current turn without advancing the heartbeat clock.
+        current_turn = max(surf_state.get("turn", 0), 1)
+
+    if stale_files:
+        accessed = _accessed_paths_this_turn(
+            records, [], surf_state.get("last_watch_ts")
+        )
+        if extra_accessed:
+            accessed |= extra_accessed
+        stale_files = surfacing.decide_surfacing(
+            stale_files, surf_state, current_turn, accessed
+        )
+
+    if advance_turn:
+        surf_state["last_watch_ts"] = now.timestamp()
+    surfacing.save_state(session_id, surf_state)
+    return stale_files
+
+
+def surface_staleness(
+    session_id: str,
+    *,
+    log_dir: Optional[Path] = None,
+    now: Optional[datetime] = None,
+    config: Optional[dict] = None,
+    accessed: Optional[set] = None,
+) -> str:
+    """Tool-boundary freshness surface (Tier 2).
+
+    Renders the "## File freshness" block for any Read file that has gone stale
+    and not yet been surfaced this turn — catching external/background edits at
+    the tool boundary instead of waiting for the next user message. Shares
+    surfacing state with watch(), so nothing double-surfaces. Returns '' when
+    nothing new is stale. Never raises — surfacing must never break a tool call.
+    """
+    try:
+        if log_dir is None:
+            log_dir = Path.home() / ".asof" / "tool_log"
+        if now is None:
+            now = datetime.now(timezone.utc)
+        if config is None:
+            config = {}
+        env_mode = os.environ.get("ASOF_MODE", "").strip().lower()
+        mode = env_mode if env_mode in ("silent", "normal", "strict") else config.get("mode", "normal")
+        if mode == "silent":
+            return ""
+        surfaced = decide_stale_surface(
+            session_id,
+            advance_turn=False,
+            log_dir=log_dir,
+            config=config,
+            now=now,
+            extra_accessed=accessed,
+        )
+        if not surfaced:
+            return ""
+        return render_watch_block(current_dt=now, stale_files=surfaced, mode=mode)
+    except Exception:
+        return ""
+
+
 def watch(
     *,
     session_id: str,
@@ -247,39 +351,21 @@ def watch(
     env_mode = os.environ.get("ASOF_MODE", "").strip().lower()
     mode = env_mode if env_mode in ("silent", "normal", "strict") else config.get("mode", "normal")
 
-    log_path = log_dir / f"{session_id}.jsonl"
-    records = _load_tool_log(log_path)
-
-    # File-freshness verdicts (stale only — adaptive rendering). Transient/
-    # agent-owned paths (background-task .output, etc.) are dropped via config
-    # staleness.exclude_globs — process I/O the agent spawned, not context it
-    # must keep fresh. Empty/absent list = track everything (prior behavior).
-    staleness_cfg = config.get("staleness", {})
-    exclude_globs = (
-        staleness_cfg.get("exclude_globs", [])
-        if isinstance(staleness_cfg, dict) else []
-    )
-    stale_files = _evaluate_working_set(records, exclude_globs=exclude_globs)
-
-    # Path mentions in the prompt
+    # Path mentions in the prompt (also count as working-set access).
     mentioned = _evaluate_path_mentions(prompt_text) if prompt_text else []
 
-    # Surfacing policy: don't broadcast every stale file every turn. Surface
-    # once, suppress repeats, re-surface on a heartbeat (while still in the
-    # working set) or a new delta. State persists in ~/.asof/session_state/.
-    from asof_core import surfacing
-    surf_state = surfacing.load_state(session_id)
-    current_turn = surf_state.get("turn", 0) + 1
-    surf_state["turn"] = current_turn
-    if stale_files:
-        accessed = _accessed_paths_this_turn(
-            records, mentioned, surf_state.get("last_watch_ts")
-        )
-        stale_files = surfacing.decide_surfacing(
-            stale_files, surf_state, current_turn, accessed
-        )
-    surf_state["last_watch_ts"] = now.timestamp()
-    surfacing.save_state(session_id, surf_state)
+    # File-freshness verdicts (stale only — adaptive rendering) with surfacing
+    # dedup. advance_turn=True: this per-message fire owns the surfacing turn
+    # counter + last_watch_ts (heartbeat ticks once per user message). Shared
+    # with the per-tool surface so a file first-surfaces exactly once.
+    stale_files = decide_stale_surface(
+        session_id,
+        advance_turn=True,
+        log_dir=log_dir,
+        config=config,
+        now=now,
+        extra_accessed={m["path"] for m in mentioned if m.get("path")},
+    )
 
     # Timestamps in the prompt
     timestamps = find_timestamps(prompt_text, base_date=now.date()) if prompt_text else []

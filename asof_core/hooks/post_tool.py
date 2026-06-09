@@ -218,6 +218,19 @@ def _summarize_input(tool_name: str, tool_input: dict) -> str:
         return ""
 
 
+def _load_config() -> dict:
+    """Load ~/.asof/config.json (staleness exclude-globs + mode). {} on miss."""
+    try:
+        config_path = Path.home() / ".asof" / "config.json"
+        if config_path.is_file():
+            with config_path.open(encoding="utf-8") as f:
+                d = json.load(f)
+            return d if isinstance(d, dict) else {}
+    except (OSError, json.JSONDecodeError, ValueError):
+        pass
+    return {}
+
+
 def post_tool(
     *,
     session_id: str,
@@ -226,8 +239,9 @@ def post_tool(
     tool_response: Optional[dict] = None,
     log_dir: Optional[Path] = None,
     now: Optional[datetime] = None,
-) -> None:
-    """Append a tool-use record to the session-scoped tool log.
+) -> str:
+    """Append a tool-use record to the session-scoped tool log, then return the
+    tool-boundary staleness block (Tier 2) — '' when nothing is newly stale.
 
     Args:
         session_id: scope identifier; one log per session
@@ -320,3 +334,19 @@ def post_tool(
     except (OSError, TypeError, ValueError, json.JSONDecodeError):
         # Silent failure: never break the substrate's tool call
         pass
+
+    # Tier 2: surface staleness at the tool boundary. After logging this tool,
+    # check whether any Read file in the working set went stale (a background
+    # process or external editor moved its mtime) and return the freshness block
+    # so the adapter can inject it before the model's next step. Shared surfacing
+    # state with watch() means a file first-surfaces exactly once, whichever hook
+    # reaches it first. Never raises — surface_staleness swallows its own errors.
+    from asof_core.hooks.watch import surface_staleness
+    accessed: set = set()
+    if isinstance(tool_input, dict):
+        fp = tool_input.get("file_path") or tool_input.get("path")
+        if isinstance(fp, str) and fp:
+            accessed.add(fp)
+    return surface_staleness(
+        session_id, log_dir=log_dir, now=now, config=_load_config(), accessed=accessed
+    )

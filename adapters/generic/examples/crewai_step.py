@@ -67,10 +67,12 @@ def wrap_agent_with_asof(agent: Any, *, session_id: str, model_id: str = None) -
     return agent
 
 
-def log_tool_call(*, session_id: str, tool_name: str, tool_input: dict) -> None:
-    """Helper for CrewAI tools — call this from your tool's run method
-    so AsOf can track the call for freshness verdicts."""
-    post_tool(
+def log_tool_call(*, session_id: str, tool_name: str, tool_input: dict) -> str:
+    """Helper for CrewAI tools — call this from your tool's run method so AsOf
+    can track the call for freshness verdicts. Returns a tool-boundary staleness
+    block (or '') — prepend it to the tool's output so the agent re-reads any
+    file a background/external process changed before its next step."""
+    return post_tool(
         session_id=session_id,
         tool_name=tool_name,
         tool_input=tool_input,

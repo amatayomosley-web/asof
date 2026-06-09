@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 # Add the parent directory (asof project root) to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from asof_core.hooks import session_init, post_tool, watch
+from asof_core.hooks import session_init, post_tool, watch, surface_staleness
 
 ASOF_DIR = Path.home() / ".asof"
 TOOL_LOG_DIR = ASOF_DIR / "tool_log"
@@ -259,6 +259,15 @@ def main() -> int:
         wake_msg = session_init(model_id=model_name, session_id=conv_id, log_dir=TOOL_LOG_DIR)
         if wake_msg:
             steps.append({"ephemeralMessage": wake_msg})
+
+    # 1b. Tool-boundary staleness (Tier 2). After logging this invocation's new
+    #     tool events (above), surface any Read file that went stale from a
+    #     background/external edit so the model sees it before its next step.
+    #     Shared surfacing state with the per-prompt watch below → surfaces once.
+    if invocation_num > 0 and transcript_path:
+        stale_block = surface_staleness(conv_id, log_dir=TOOL_LOG_DIR)
+        if stale_block:
+            steps.append({"ephemeralMessage": stale_block})
 
     # 2. UserPromptSubmit injection — stateful. Fires watch() once per user
     #    prompt, at the first invocation where that prompt is on disk (NOT gated
