@@ -13,4 +13,4 @@ from __future__ import annotations
 from asof_core.version import SCHEMA_VERSION, MIN_PROSE_VERSION
 
 __all__ = ["SCHEMA_VERSION", "MIN_PROSE_VERSION"]
-__version__ = "0.1.0"
+__version__ = "0.1.1"

@@ -10,6 +10,7 @@ import os
 import sys
 import io
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -135,12 +136,44 @@ def process_transcript_events(conv_id: str, transcript_path: str):
     if max_idx > last_idx:
         save_last_processed_step(conv_id, max_idx)
 
-def get_latest_user_prompt(transcript_path: str) -> str:
-    """Find the most recent user prompt in the transcript."""
-    if not transcript_path or not os.path.exists(transcript_path):
+USER_REQUEST_RE = re.compile(r"<USER_REQUEST>\s*(.*?)\s*</USER_REQUEST>", re.DOTALL)
+
+
+def _strip_user_request(content: str) -> str:
+    """Antigravity wraps the prompt as <USER_REQUEST>..</USER_REQUEST> followed by
+    an <ADDITIONAL_METADATA> block. Scan only the user's own words so injected
+    metadata (e.g. 'The current local time is ...') cannot trip the matchers."""
+    if not content:
         return ""
-    
-    prompts = []
+    m = USER_REQUEST_RE.search(content)
+    return m.group(1).strip() if m else content.strip()
+
+
+def get_user_prompt_state(conv_id: str) -> int:
+    """Highest USER_INPUT step_index already handed to watch(). -1 if none."""
+    state_file = STATE_DIR / f"state_{conv_id}.user.json"
+    if not state_file.exists():
+        return -1
+    try:
+        return json.loads(state_file.read_text(encoding="utf-8")).get("last_watched_user_step", -1)
+    except Exception:
+        return -1
+
+
+def save_user_prompt_state(conv_id: str, step_index: int):
+    state_file = STATE_DIR / f"state_{conv_id}.user.json"
+    tmp_file = STATE_DIR / f"state_{conv_id}.user.json.tmp"
+    try:
+        tmp_file.write_text(json.dumps({"last_watched_user_step": step_index}), encoding="utf-8")
+        os.replace(tmp_file, state_file)
+    except Exception:
+        pass
+
+
+def _scan_newest_user_input(transcript_path: str) -> tuple[int, str]:
+    """(step_index, raw_content) of the highest-step USER_INPUT, or (-1, '')."""
+    best_idx = -1
+    best_content = ""
     try:
         with open(transcript_path, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
@@ -148,14 +181,41 @@ def get_latest_user_prompt(transcript_path: str) -> str:
                     continue
                 try:
                     entry = json.loads(line)
-                    if entry.get("source") == "USER_EXPLICIT" and entry.get("type") == "USER_INPUT":
-                        prompts.append(entry.get("content", ""))
                 except Exception:
                     continue
+                if entry.get("source") == "USER_EXPLICIT" and entry.get("type") == "USER_INPUT":
+                    si = entry.get("step_index", -1)
+                    if si >= best_idx:
+                        best_idx = si
+                        best_content = entry.get("content", "")
     except Exception:
         pass
-    
-    return prompts[-1] if prompts else ""
+    return best_idx, best_content
+
+
+def get_new_user_prompt(transcript_path: str, last_step: int, poll: bool = False) -> tuple[int, str]:
+    """Newest USER_INPUT with step_index > last_step, wrapper stripped.
+
+    Antigravity fires PreInvocation many times per turn, and the current turn's
+    USER_INPUT is not reliably flushed to transcript.jsonl by invocation 0. The
+    step-index cursor (last_step) makes the scan fire exactly once per prompt, at
+    the first invocation where it is on disk. The optional bounded poll is a
+    best-effort same-turn catch for zero-tool single-shot turns; when it misses,
+    the next invocation's cursor comparison catches the prompt with no loss.
+
+    Returns (new_step, prompt_text), or (last_step, '') when nothing is new.
+    """
+    if not transcript_path or not os.path.exists(transcript_path):
+        return last_step, ""
+    import time
+    attempts = 10 if poll else 1  # ~1s ceiling at 100ms, well under the 5s hook timeout
+    for i in range(attempts):
+        idx, content = _scan_newest_user_input(transcript_path)
+        if idx > last_step and content:
+            return idx, _strip_user_request(content)
+        if poll and i < attempts - 1:
+            time.sleep(0.1)
+    return last_step, ""
 
 def main() -> int:
     # Ensure directories exist
@@ -200,12 +260,20 @@ def main() -> int:
         if wake_msg:
             steps.append({"ephemeralMessage": wake_msg})
 
-    # 2. UserPromptSubmit Injection (Invocation 0 only)
-    if invocation_num == 0 and transcript_path:
-        user_prompt = get_latest_user_prompt(transcript_path)
-        watch_msg = watch(session_id=conv_id, prompt_text=user_prompt, log_dir=TOOL_LOG_DIR)
-        if watch_msg:
-            steps.append({"ephemeralMessage": watch_msg})
+    # 2. UserPromptSubmit injection — stateful. Fires watch() once per user
+    #    prompt, at the first invocation where that prompt is on disk (NOT gated
+    #    to invocation 0, which races the transcript flush). watch() expects one
+    #    call per turn; the step-index cursor guarantees exactly that.
+    if transcript_path:
+        last_user_step = get_user_prompt_state(conv_id)
+        new_step, prompt_text = get_new_user_prompt(
+            transcript_path, last_user_step, poll=(invocation_num == 0)
+        )
+        if new_step > last_user_step and prompt_text:
+            watch_msg = watch(session_id=conv_id, prompt_text=prompt_text, log_dir=TOOL_LOG_DIR)
+            if watch_msg:
+                steps.append({"ephemeralMessage": watch_msg})
+            save_user_prompt_state(conv_id, new_step)
 
     print(json.dumps({"injectSteps": steps}))
     return 0
