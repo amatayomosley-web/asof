@@ -20,6 +20,14 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8",
 
 from asof_core.hooks import watch
 
+# Harness text, not a person's prompt. A task notification names its output file, so the watch reported on
+# that path: 274 of 277 notifications, 98K chars, in the 2026-11 token audit. Same list as cairn_per_turn.py.
+_MACHINE_PREFIXES = ("<task-notification>", "=== Transcript of", "<system-", "Caveat:")
+
+
+def _is_machine_turn(prompt: str) -> bool:
+    return prompt.lstrip().startswith(_MACHINE_PREFIXES)
+
 
 def _load_config() -> dict:
     """Load AsOf config from ~/.asof/config.json. Returns {} if missing
@@ -53,6 +61,9 @@ def main() -> int:
             elif isinstance(p, str):
                 parts.append(p)
         prompt_text = "\n".join(parts)
+
+    if _is_machine_turn(prompt_text):
+        return 0
 
     config = _load_config()
 
